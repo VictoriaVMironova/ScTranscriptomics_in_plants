@@ -52,20 +52,26 @@ In the computer practice, we are using the single-cell dataset from Arabidopsis 
 ---
 #Step 0. Data download
 
-The data is stored on GEO database: https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE167135
-Today we will use all 10xGenomics samples:
+The data is stored on GEO database: https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE167135 &lt;/br&gt;
+In fact, they provided four 10xGenomics samples:
 - GSM509788 (ATML1p 10X Genomics replica 3).
 - GSM509789 (TMMp 10X Genomics replica 1),
 - GSM509790 (TMMp 10X Genomics replica 2),
 - GSM509791 (TMMp 10X Genomics replica 3).
+---
+class: inverse, middle
 
-You can start from the scratch, downloading *.tar* archive yourself and finding the data matrix there.&lt;/br&gt;
-Or you can use the data we already downloaded and stored for you in [Google Drive](https://drive.google.com/drive/folders/1tkcZoZwSmunHVbSHgNEwQcWKOERQ7anI?usp=share_link).
+#The learning goals:
 
+- To understand the internal structure of a Seurat object
+
+- To learn how to adjust the number of clusters
+
+- To subset and integrate the Seurat datasets
 ---
 # Step 1. Data loading into R
 
-Yesterday, we have already created Seurat Object leaf.dataset and saved it as .rds file. Lets reuse it.
+Lets reuse the Seurat Object we created in the tutorial 2.
 
 
 ```r
@@ -14606,7 +14612,7 @@ head(leaf.dataset@meta.data)
 ## AAACCTGTCTAGAGTC-1       4377         1869            15              15  adult
 ```
 ---
-#Step 2.3. Methods you can apply to Seurat
+#Step 2.3. Methods you can apply to Seurat object
 
 
 ```r
@@ -14662,6 +14668,80 @@ utils::methods(class = 'Seurat')
 ```r
 ?SeuratObject::subset
 ```
+
+---
+class: inverse, middle
+
+#Aim 2
+
+- Adjust the number of clusters
+---
+#The issue we faced
+It often happens that we cannot annotate all the clusters
+
+.pull-left[
+&lt;img src="ComputerPractice4_Subset_Integrate_files/figure-html/DimPLot1-1.png" width="504" /&gt;
+]
+.pull-right[
+&lt;div class="figure"&gt;
+&lt;img src="Figures/ScLeaf.jpg" alt="Graphical summary from (Lopez et al., 2021)" width="80%" /&gt;
+&lt;p class="caption"&gt;Graphical summary from (Lopez et al., 2021)&lt;/p&gt;
+&lt;/div&gt;
+]
+---
+#Adjusting the clusters number: resolution 1
+.pull-left[
+
+```r
+leaf.dataset &lt;- FindClusters(leaf.dataset, 
+                                  resolution = 1, 
+                                  verbose = FALSE)
+DimPlot(leaf.dataset, 
+        label = TRUE, 
+        pt.size = 1.5, 
+        label.size = 10) + 
+        NoLegend() 
+```
+]
+.pull-right[
+&lt;img src="ComputerPractice4_Subset_Integrate_files/figure-html/clusters adjust res 1 out-1.png" width="504" /&gt;
+]
+---
+#Making less clusters: resolution 0.2
+.pull-left[
+
+```r
+leaf.dataset &lt;- FindClusters(leaf.dataset, 
+                                  resolution = 0.2, 
+                                  verbose = FALSE)
+DimPlot(leaf.dataset, 
+        label = TRUE, 
+        pt.size = 1.5, 
+        label.size = 10) + 
+        NoLegend() 
+```
+]
+.pull-right[
+&lt;img src="ComputerPractice4_Subset_Integrate_files/figure-html/clusters adjust res 0.2 out-1.png" width="504" /&gt;
+]
+---
+#Making more clusters: resolution 1.5
+.pull-left[
+
+```r
+leaf.dataset &lt;- FindClusters(leaf.dataset, 
+                                  resolution = 1.5, 
+                                  verbose = FALSE)
+DimPlot(leaf.dataset, 
+        label = TRUE, 
+        pt.size = 1.5, 
+        label.size = 10) + 
+        NoLegend() 
+```
+]
+.pull-right[
+&lt;img src="ComputerPractice4_Subset_Integrate_files/figure-html/clusters adjust res 1.5 out-1.png" width="504" /&gt;
+]
     </textarea>
 <style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
 <script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>

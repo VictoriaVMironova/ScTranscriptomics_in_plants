@@ -43,7 +43,7 @@ The course materials can be found via [GitHub](https://github.com/VictoriaVMiron
 ```{r libraries,  echo = FALSE}
 library(Seurat)
 library(tidyverse)
-
+leaf.dataset <- readRDS('Data/leaf.dataset.rds')
 ```
 ---
 #The data: scRNA-Seq from leaves
@@ -60,20 +60,26 @@ knitr::include_graphics("Figures/ScLeaf.jpg")
 ---
 #Step 0. Data download
 
-The data is stored on GEO database: https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE167135
-Today we will use all 10xGenomics samples:
+The data is stored on GEO database: https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE167135 </br>
+In fact, they provided four 10xGenomics samples:
 - GSM509788 (ATML1p 10X Genomics replica 3).
 - GSM509789 (TMMp 10X Genomics replica 1),
 - GSM509790 (TMMp 10X Genomics replica 2),
 - GSM509791 (TMMp 10X Genomics replica 3).
+---
+class: inverse, middle
 
-You can start from the scratch, downloading *.tar* archive yourself and finding the data matrix there.</br>
-Or you can use the data we already downloaded and stored for you in [Google Drive](https://drive.google.com/drive/folders/1tkcZoZwSmunHVbSHgNEwQcWKOERQ7anI?usp=share_link).
+#The learning goals:
 
+- To understand the internal structure of a Seurat object
+
+- To learn how to adjust the number of clusters
+
+- To subset and integrate the Seurat datasets
 ---
 # Step 1. Data loading into R
 
-Yesterday, we have already created Seurat Object leaf.dataset and saved it as .rds file. Lets reuse it.
+Lets reuse the Seurat Object we created in the tutorial 2.
 
 ```{r ATML1 seurat object}
 leaf.dataset<-readRDS('Data/leaf.dataset.rds')
@@ -159,7 +165,7 @@ leaf.dataset <- AddMetaData(
 head(leaf.dataset@meta.data)
 ```
 ---
-#Step 2.3. Methods you can apply to Seurat
+#Step 2.3. Methods you can apply to Seurat object
 
 ```{r add seurat object 5}
 utils::methods(class = 'Seurat')
@@ -170,3 +176,87 @@ utils::methods(class = 'Seurat')
 ```{r add seurat object 6}
 ?SeuratObject::subset
 ```
+
+---
+class: inverse, middle
+
+#Aim 2
+
+- Adjust the number of clusters
+---
+#The issue we faced
+It often happens that we cannot annotate all the clusters
+
+.pull-left[
+```{r DimPLot1, fig.height = 6, echo = FALSE}
+DimPlot(leaf.dataset, label = TRUE, pt.size = 1.5, label.size = 10) + NoLegend()
+```
+]
+.pull-right[
+```{r Ara leaf2, echo=FALSE, fig.cap="Graphical summary from (Lopez et al., 2021)", out.width = '80%'}
+knitr::include_graphics("Figures/ScLeaf.jpg")
+```
+]
+---
+#Adjusting the clusters number: resolution 1
+.pull-left[
+```{r clusters adjust res 1, eval = FALSE}
+leaf.dataset <- FindClusters(leaf.dataset, 
+                                  resolution = 1, 
+                                  verbose = FALSE)
+DimPlot(leaf.dataset, 
+        label = TRUE, 
+        pt.size = 1.5, 
+        label.size = 10) + 
+        NoLegend() 
+```
+]
+.pull-right[
+```{r clusters adjust res 1 out, echo = FALSE, eval = TRUE, ref.label='clusters adjust res 1'}
+```
+]
+---
+#Making less clusters: resolution 0.2
+.pull-left[
+```{r clusters adjust res 0.2, eval = FALSE}
+leaf.dataset <- FindClusters(leaf.dataset, 
+                                  resolution = 0.2, 
+                                  verbose = FALSE)
+DimPlot(leaf.dataset, 
+        label = TRUE, 
+        pt.size = 1.5, 
+        label.size = 10) + 
+        NoLegend() 
+```
+]
+.pull-right[
+```{r clusters adjust res 0.2 out, echo = FALSE, eval = TRUE, ref.label='clusters adjust res 0.2'}
+```
+]
+---
+#Making more clusters: resolution 1.5
+.pull-left[
+```{r clusters adjust res 1.5, eval = FALSE}
+leaf.dataset <- FindClusters(leaf.dataset, 
+                                  resolution = 1.5, 
+                                  verbose = FALSE)
+DimPlot(leaf.dataset, 
+        label = TRUE, 
+        pt.size = 1.5, 
+        label.size = 10) + 
+        NoLegend() 
+```
+]
+.pull-right[
+```{r clusters adjust res 1.5 out, echo = FALSE, eval = TRUE, ref.label='clusters adjust res 1.5'}
+```
+]
+---
+class: inverse, middle
+
+#Aim 3
+
+- Subset and integrate the single-cell data
+
+---
+

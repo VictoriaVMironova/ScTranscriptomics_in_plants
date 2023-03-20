@@ -13,7 +13,7 @@ set.seed(42)
 leaf.dataset<-readRDS('Data/leaf.dataset.rds')
 DimPlot(leaf.dataset, label = TRUE, pt.size = 1.5, label.size = 10) + NoLegend()
 
-#Lets explore Seurat object in a greater detail
+#Task 1: Exploring Seurat Object
 str(leaf.dataset)
 show(leaf.dataset)
 show(leaf.dataset@assays)
@@ -26,14 +26,15 @@ head(leaf.dataset@meta.data$percent.mt)
 
 #You can manipulate the data taken from Seurat Object externally
 hist(leaf.dataset@meta.data$percent.mt)
+
 MetaData <- as.data.frame(leaf.dataset@meta.data)
 
 Status <- MetaData %>% 
-        mutate(Status = case_when(
-          nFeature_RNA <= 1500 ~ "old",
-          (nFeature_RNA > 1500 & nFeature_RNA < 3000)  ~ "adult",
-          nFeature_RNA >= 3000 ~ "young")) %>%
-        select(Status)
+  mutate(Status = case_when(
+    nFeature_RNA <= 1500 ~ "old",
+    (nFeature_RNA > 1500 & nFeature_RNA < 3000)  ~ "adult",
+    nFeature_RNA >= 3000 ~ "young")) %>%
+  select(Status)
 
 #You can also add meta data into Seurat Objects
 leaf.dataset <- AddMetaData(
@@ -48,6 +49,23 @@ utils::methods(class = 'Seurat')
 ?SeuratObject::Idents
 Idents(leaf.dataset)
 summary(Idents(leaf.dataset))
+
+#Task 2: Adjusting the number of clusters
+# What if we would like to see less clusters?
+# here we decrease the resolution
+leaf.dataset <- FindClusters(leaf.dataset, resolution = 0.2, verbose = FALSE)
+DimPlot(leaf.dataset)
+# here we decrease the resolution
+leaf.dataset <- FindClusters(leaf.dataset, resolution = 1.5, verbose = FALSE)
+DimPlot(leaf.dataset)
+# The clusters taken with different resolution can be found in the metadata
+head(leaf.dataset@meta.data)
+
+#and you can change the active clusters in the Seurat object any time 
+summary(leaf.dataset@active.ident)
+leaf.dataset <- SetIdent(leaf.dataset, value = leaf.dataset@meta.data$SCT_snn_res.0.2)
+summary(leaf.dataset@active.ident)
+
 
 ?SeuratObject::subset
 
