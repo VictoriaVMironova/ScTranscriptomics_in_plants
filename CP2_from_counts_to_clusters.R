@@ -11,12 +11,11 @@ library(tidyverse)
 set.seed(42)
 
 #Step 1. Getting data into R
-# load the data for GSM5097888 experiment. Or take it here: https://drive.google.com/drive/folders/1tkcZoZwSmunHVbSHgNEwQcWKOERQ7anI?usp=share_link 
-#change the path to the data folder below
-#path <- 'E:/R_images/Leaf_LopezAnido_DevCell/Data/GSM5097888_Leaf-HVYNNBBXX/filtered_gene_bc_matrices/Arabidopsis/'
+#GSM509788 data is stored in [Google Drive](https://drive.google.com/drive/folders/11hHUQ3nabTj230urqKnTXPCwoqWhZ8Zc?usp=sharing).
+#GSM509789 is already present in the repository `Data/GSM509789/`.
 #This is the version shown on presentation:
 #path <- 'Data/GSM5097888/' 
-#This is a light version (if you laptop has < 16 Gb RAM):
+#This is a light version:
 path <- 'Data/GSM5097889/' 
 
 leaf.counts<-Read10X(path, gene.column = 1)
@@ -60,15 +59,20 @@ leaf.dataset <- readRDS('Data/leaf.dataset.rds')
 
 #Step 6. Gene expression vizualization
 
-FeaturePlot(leaf.dataset,features = 'AT1G11850')
-            
-FeaturePlot(leaf.dataset,features = 'AT1G11850',order = T, label = T, pt.size = 3) + scale_color_gradientn(colors = c('lightgray','yellow','red','darkred'))
+FeaturePlot(leaf.dataset,features = 'AT3G24140')
 
-FeaturePlot(leaf.dataset,features = c('AT1G12480', 'AT1G11850', 'AT2G05100', 'AT5G38410'), order = T, label = F,pt.size = 3)
+FeaturePlot(leaf.dataset,features = 'AT3G24140',order = T, label = T, pt.size = 3) +
+    scale_color_gradientn(colors = c('lightgray','yellow','red','darkred'))+
+    ggtitle("FAMA")
 
-marker_genes<- c('AT2G05100', 'AT5G01530', 'AT4G10340', 'AT1G67090', 'AT5G38410', 'AT3G54890', 'AT1G29920', 'AT3G08940', 'AT3G27690', 'AT5G38430', 'AT1G76570', 'AT4G21750', 'AT2G26330', 'AT3G45640', 'AT2G42840', 'AT5G53210', 'AT5G60880', 'AT2G26330', 'AT1G80080', 'AT1G34245', 'AT3G26744', 'AT1G12860', 'AT2G42840', 'AT5G53210', 'AT5G60880', 'AT2G26330', 'AT5G62230', 'AT5G07180', 'AT1G80080', 'AT1G34245', 'AT1G04110', 'AT4G31805', 'AT3G26744', 'AT1G12860', 'AT3G45640', 'AT3G06120', 'AT5G53210', 'AT2G26330', 'AT5G62230', 'AT5G07180', 'AT1G80080', 'AT1G34245', 'AT2G20875', 'AT1G04110', 'AT4G31805', 'AT3G26744', 'AT1G12860', 'AT3G45640', 'AT3G06120', 'AT2G26330', 'AT5G62230', 'AT5G07180', 'AT2G20875', 'AT1G04110', 'AT4G31805', 'AT3G26744', 'AT1G12860', 'AT1G14350', 'AT3G45640', 'AT3G24140', 'AT3G06120', 'AT2G26330', 'AT5G62230', 'AT5G07180', 'AT2G20875', 'AT1G04110', 'AT3G26744', 'AT1G12860', 'AT1G14350', 'AT3G45640', 'AT3G24140', 'AT2G26330', 'AT5G62230', 'AT5G07180', 'AT1G04110', 'AT1G14350', 'AT5G46240', 'AT3G45640', 'AT3G17300', 'AT5G46240', 'AT2G26330', 'AT3G45640', 'AT4G12970', 'AT2G17950', 'AT2G27250', 'AT2G45190', 'AT2G27250', 'AT4G17710', 'AT1G55580', 'AT2G22850', 'AT3G28730', 'AT4G32880', 'AT5G16560')
+FeaturePlot(leaf.dataset,features = c('AT3G24140', 'AT1G11850', 'AT2G05100', 'AT5G38410'), order = T, label = F,pt.size = 3)
 
-DoHeatmap(leaf.dataset, features = marker_genes) + NoLegend()
+marker_genes<- c('AT1G11850', 'AT3G24140', 'AT2G05100', 'AT5G01530', 'AT4G10340', 'AT1G67090', 'AT5G38410', 'AT3G54890', 'AT1G29920', 'AT3G08940', 'AT3G27690', 'AT5G38430', 'AT1G76570', 'AT4G21750', 'AT2G26330', 'AT3G45640', 'AT2G42840', 'AT5G53210', 'AT5G60880', 'AT2G26330', 'AT1G80080', 'AT1G34245', 'AT3G26744', 'AT1G12860', 'AT2G42840', 'AT5G53210', 'AT5G60880', 'AT2G26330', 'AT5G62230', 'AT5G07180', 'AT1G80080', 'AT1G34245', 'AT1G04110', 'AT4G31805', 'AT3G26744', 'AT1G12860', 'AT3G45640', 'AT3G06120', 'AT5G53210', 'AT2G26330', 'AT5G62230', 'AT5G07180', 'AT1G80080', 'AT1G34245', 'AT2G20875', 'AT1G04110', 'AT4G31805', 'AT3G26744', 'AT1G12860', 'AT3G45640', 'AT3G06120', 'AT2G26330', 'AT5G62230', 'AT5G07180', 'AT2G20875', 'AT1G04110', 'AT4G31805', 'AT3G26744', 'AT1G12860', 'AT1G14350', 'AT3G45640', 'AT3G24140', 'AT3G06120', 'AT2G26330', 'AT5G62230', 'AT5G07180', 'AT2G20875', 'AT1G04110', 'AT3G26744', 'AT1G12860', 'AT1G14350', 'AT3G45640', 'AT3G24140', 'AT2G26330', 'AT5G62230', 'AT5G07180', 'AT1G04110', 'AT1G14350', 'AT5G46240', 'AT3G45640', 'AT3G17300', 'AT5G46240', 'AT2G26330', 'AT3G45640', 'AT4G12970', 'AT2G17950', 'AT2G27250', 'AT2G45190', 'AT2G27250', 'AT4G17710', 'AT1G55580', 'AT2G22850', 'AT3G28730', 'AT4G32880', 'AT5G16560')
+
+DoHeatmap(leaf.dataset, features = marker_genes) + NoLegend() 
+
+DoHeatmap(leaf.dataset, features = marker_genes) + NoLegend() + scale_y_discrete(labels = c("AT3G24140" = "FAMA"))
+
 
 #Step 7. Clusters reannotation.
 

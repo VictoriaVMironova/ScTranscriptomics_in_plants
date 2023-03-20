@@ -39,7 +39,7 @@ The course materials can be found via [GitHub](https://github.com/VictoriaVMiron
 ---
 #Step 0. Data download
 
-In the computer practice, we will use the single-cell dataset from Arabidopsis leaf:
+In the computer practice, we use the single-cell dataset from Arabidopsis leaf:
 .pull-left[
 *Lopez-Anido CB, Vatén A, Smoot NK, Sharma N et al. Single-cell resolution of lineage trajectories in the Arabidopsis stomatal lineage and developing leaf. Dev Cell 2021 Apr 5;56(7):1043-1055.e4.*
 ]
@@ -54,8 +54,8 @@ In the computer practice, we will use the single-cell dataset from Arabidopsis l
 
 The data is stored on GEO database: https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE167135&lt;/br&gt;
 There are four datasets generated using 10xGenomics:
-- *GSM509788 (ATML1p 10X Genomics pool 1)*.
-- *GSM509789 (TMMp 10X Genomics replica 1)*,
+- **GSM509788 (ATML1p 10X Genomics pool 1)**.
+- **GSM509789 (TMMp 10X Genomics replica 1)**,
 - GSM509790 (TMMp 10X Genomics replica 2),
 - GSM509791 (TMMp 10X Genomics replica 3).
 
@@ -64,15 +64,21 @@ There are four datasets generated using 10xGenomics:
 This presentation uses GSM509788 (high quality data). &lt;/br&gt;
 We suggest you to use GSM509789 (lower quality data, smaller size). &lt;/br&gt;
 
+--
+&lt;/br&gt;
 You can start from the scratch, downloading *.tar* archive yourself and finding the data matrix there.&lt;/br&gt;
-Or you can use the data we already downloaded and stored for you in [GitHub ](https://github.com/VictoriaVMironova/ScTranscriptomics_in_plants) repository `Data/GSM509789/`.
+Or you can use the data we already downloaded and stored for you:&lt;/br&gt;
+
+GSM509788: in [Google Drive](https://drive.google.com/drive/folders/11hHUQ3nabTj230urqKnTXPCwoqWhZ8Zc?usp=sharing).
+
+GSM509789: in [GitHub ](https://github.com/VictoriaVMironova/ScTranscriptomics_in_plants) repository `Data/GSM509789/`.
 
 ---
 class: inverse, middle
 
 #How this presentation works?
 - All the course materials are uploaded to [GitHub](https://github.com/VictoriaVMironova/ScTranscriptomics_in_plants).
-- You need to create a new project cloning the [GitHub](https://github.com/VictoriaVMironova/ScTranscriptomics_in_plants) repository. Or download the repository with all the course materials (including this tutorial) and open *ScTranscriptomics_inPlants.Rproj* project from there. &lt;/br&gt;
+- You need to create a new project cloning the [GitHub](https://github.com/VictoriaVMironova/ScTranscriptomics_in_plants) repository. Or downloading the repository with all the course materials (including this tutorial) and opening *ScTranscriptomics_inPlants.Rproj* project from there. &lt;/br&gt;
 - This presentation is generated from .Rmd file which you can also find in the repository.
 - The presentation visualizes the output of the code chunks that *CP2_from_counts_to_clusters.R* contains.
 - We will go through the code line-by-line together. 
@@ -1226,7 +1232,7 @@ dim(leaf.dataset)
 
 Only one cell was filtered out, this is because the dataset has been already cleaned by the authors.&lt;/br&gt;
 --
-What about you?
+What about your dataset?
 ---
 #Step 3. Data normalization 
 
@@ -1327,7 +1333,7 @@ FeaturePlot visualizes the features stored in Seurat object. It is ggplot2 objec
 .pull-left[
 
 ```r
-FeaturePlot(leaf.dataset,features = 'AT1G77990')
+FeaturePlot(leaf.dataset,features = 'AT3G24140')
 ```
 
 &lt;img src="ComputerPractice2_from_counts_to_clusters_files/figure-html/FeaturePlot standard-1.png" width="504" /&gt;
@@ -1335,7 +1341,9 @@ FeaturePlot(leaf.dataset,features = 'AT1G77990')
 .pull-right[
 
 ```r
-FeaturePlot(leaf.dataset,features = 'AT1G77990',order = T, label = T,pt.size = 3)+scale_color_gradientn(colors = c('lightgray','yellow','red','darkred'))
+FeaturePlot(leaf.dataset,features = 'AT3G24140',order = T, label = T,pt.size = 3)+
+  scale_color_gradientn(colors = c('lightgray','yellow','red','darkred'))+
+  ggtitle("FAMA")
 ```
 
 &lt;img src="ComputerPractice2_from_counts_to_clusters_files/figure-html/featureplot adj-1.png" width="504" /&gt;
@@ -1354,7 +1362,7 @@ FeaturePlot(leaf.dataset,features = c('AT1G12480', 'AT1G11850', 'AT2G05100', 'AT
 
 
 ```r
-marker_genes&lt;- c('AT2G05100', 'AT5G01530', 'AT4G10340', 'AT1G67090', 'AT5G38410', 'AT3G54890', 'AT1G29920', 'AT3G08940', 'AT3G27690', 'AT5G38430', 'AT1G76570', 'AT4G21750', 'AT2G26330', 'AT3G45640', 'AT2G42840', 'AT5G53210', 'AT5G60880', 'AT2G26330', 'AT1G80080', 'AT1G34245', 'AT3G26744', 'AT1G12860', 'AT2G42840', 'AT5G53210', 'AT5G60880', 'AT2G26330', 'AT5G62230', 'AT5G07180', 'AT1G80080', 'AT1G34245', 'AT1G04110', 'AT4G31805', 'AT3G26744', 'AT1G12860', 'AT3G45640', 'AT3G06120', 'AT5G53210', 'AT2G26330', 'AT5G62230', 'AT5G07180', 'AT1G80080', 'AT1G34245', 'AT2G20875', 'AT1G04110', 'AT4G31805', 'AT3G26744', 'AT1G12860', 'AT3G45640', 'AT3G06120', 'AT2G26330', 'AT5G62230', 'AT5G07180', 'AT2G20875', 'AT1G04110', 'AT4G31805', 'AT3G26744', 'AT1G12860', 'AT1G14350', 'AT3G45640', 'AT3G24140', 'AT3G06120', 'AT2G26330', 'AT5G62230', 'AT5G07180', 'AT2G20875', 'AT1G04110', 'AT3G26744', 'AT1G12860', 'AT1G14350', 'AT3G45640', 'AT3G24140', 'AT2G26330', 'AT5G62230', 'AT5G07180', 'AT1G04110', 'AT1G14350', 'AT5G46240', 'AT3G45640', 'AT3G17300', 'AT5G46240', 'AT2G26330', 'AT3G45640', 'AT4G12970', 'AT2G17950', 'AT2G27250', 'AT2G45190', 'AT2G27250', 'AT4G17710', 'AT1G55580', 'AT2G22850', 'AT3G28730', 'AT4G32880', 'AT5G16560')
+marker_genes&lt;- c('AT3G24140', 'AT2G05100', 'AT5G01530', 'AT4G10340', 'AT1G67090', 'AT5G38410', 'AT3G54890', 'AT1G29920', 'AT3G08940', 'AT3G27690', 'AT5G38430', 'AT1G76570', 'AT4G21750', 'AT2G26330', 'AT3G45640', 'AT2G42840', 'AT5G53210', 'AT5G60880', 'AT2G26330', 'AT1G80080', 'AT1G34245', 'AT3G26744', 'AT1G12860', 'AT2G42840', 'AT5G53210', 'AT5G60880', 'AT2G26330', 'AT5G62230', 'AT5G07180', 'AT1G80080', 'AT1G34245', 'AT1G04110', 'AT4G31805', 'AT3G26744', 'AT1G12860', 'AT3G45640', 'AT3G06120', 'AT5G53210', 'AT2G26330', 'AT5G62230', 'AT5G07180', 'AT1G80080', 'AT1G34245', 'AT2G20875', 'AT1G04110', 'AT4G31805', 'AT3G26744', 'AT1G12860', 'AT3G45640', 'AT3G06120', 'AT2G26330', 'AT5G62230', 'AT5G07180', 'AT2G20875', 'AT1G04110', 'AT4G31805', 'AT3G26744', 'AT1G12860', 'AT1G14350', 'AT3G45640', 'AT3G24140', 'AT3G06120', 'AT2G26330', 'AT5G62230', 'AT5G07180', 'AT2G20875', 'AT1G04110', 'AT3G26744', 'AT1G12860', 'AT1G14350', 'AT3G45640', 'AT3G24140', 'AT2G26330', 'AT5G62230', 'AT5G07180', 'AT1G04110', 'AT1G14350', 'AT5G46240', 'AT3G45640', 'AT3G17300', 'AT5G46240', 'AT2G26330', 'AT3G45640', 'AT4G12970', 'AT2G17950', 'AT2G27250', 'AT2G45190', 'AT2G27250', 'AT4G17710', 'AT1G55580', 'AT2G22850', 'AT3G28730', 'AT4G32880', 'AT5G16560')
 
 DoHeatmap(leaf.dataset, features = marker_genes) + NoLegend()
 ```
