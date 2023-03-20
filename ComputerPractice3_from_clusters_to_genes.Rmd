@@ -58,34 +58,35 @@ DimPlot(leaf.dataset, label = TRUE, pt.size = 1.5, label.size = 10) + NoLegend()
 ```
 ]
 .pull-right[
-```{r featureplot1, fig.height = 6}
+```{r featureplot, fig.height = 6}
 DoHeatmap(leaf.dataset, features = marker_genes) + NoLegend()
 ```
 ]
 ---
-#The issue we faced
-It often happens that we cannot annotate all the clusters
+class: inverse, middle
 
-.pull-left[
-```{r DimPLot1, fig.height = 6, echo = FALSE}
-DimPlot(leaf.dataset, label = TRUE, pt.size = 1.5, label.size = 10) + NoLegend()
-```
-]
-.pull-right[
-```{r Ara leaf, echo=FALSE, fig.cap="Graphical summary from (Lopez et al., 2021)", out.width = '80%'}
-knitr::include_graphics("Figures/ScLeaf.jpg")
-```
-]
----
-class: middle, inverse
+#The learning goals for this tutorial:
 
-#Task 1: Adjusting the number of clusters
+- how to find and visualize marker genes
+
+- How to find differentially expressed genes?
+
+- How to annotate the clusters?
 
 ---
-#Reprocessing the data to adjust the number of clusters
-Lets rerun the whole processing pipeline till FindClusters function:
-```{r preprocessing, eval = FALSE}
-path <- "Data/GSM5097888"
+#Step 1: Preparatory
+Lets reuse the dataset we generated in computer practice 2:
+
+```{r dataset reuse, eval = FALSE}
+leaf.dataset<-readRDS('Data/leaf.dataset.rds')
+```
+
+---
+#Step 1: Preparatory
+Or we can generate it once more using the summary script:
+
+```{r dataset regenerate, eval = FALSE}
+path <- 'Data/GSM5097888/'
 leaf.dataset<-Read10X(path, gene.column = 1)
 leaf.dataset <- CreateSeuratObject(counts = leaf.dataset, project = "leaf")
 leaf.dataset[["percent.mt"]] <- PercentageFeatureSet(leaf.dataset, pattern = "^ATM")
@@ -95,85 +96,40 @@ leaf.dataset <- SCTransform(leaf.dataset)
 leaf.dataset <- RunPCA(leaf.dataset,verbose = FALSE)
 leaf.dataset <- RunUMAP(leaf.dataset, dims = 1:50, verbose = FALSE)
 leaf.dataset <- FindNeighbors(leaf.dataset, dims = 1:50, verbose = FALSE)
+leaf.dataset <- FindClusters(leaf.dataset, resolution = 1, verbose = FALSE)
 ```
----
-#Adjusting the clusters number: resolution 1
-.pull-left[
-```{r clusters adjust res 1, eval = FALSE}
-leaf.dataset_res1 <- FindClusters(leaf.dataset, 
-                                  resolution = 1, 
-                                  verbose = FALSE)
-DimPlot(leaf.dataset_res1, 
-        label = TRUE, 
-        pt.size = 1.5, 
-        label.size = 10) + 
-        NoLegend() 
-```
-]
-.pull-right[
-```{r clusters adjust res 1 out, echo = FALSE, eval = TRUE, ref.label='clusters adjust res 1'}
-```
-]
----
-#Making less clusters: resolution 0.2
-.pull-left[
-```{r clusters adjust res 0.2, eval = FALSE}
-leaf.dataset_res0.2 <- FindClusters(leaf.dataset, 
-                                  resolution = 0.2, 
-                                  verbose = FALSE)
-DimPlot(leaf.dataset_res0.2, 
-        label = TRUE, 
-        pt.size = 1.5, 
-        label.size = 10) + 
-        NoLegend() 
-```
-]
-.pull-right[
-```{r clusters adjust res 0.2 out, echo = FALSE, eval = TRUE, ref.label='clusters adjust res 0.2'}
-```
-]
----
-#Making more clusters: resolution 1.5
-.pull-left[
-```{r clusters adjust res 1.5, eval = FALSE}
-leaf.dataset_res1.5 <- FindClusters(leaf.dataset, 
-                                  resolution = 1.5, 
-                                  verbose = FALSE)
-DimPlot(leaf.dataset_res1.5, 
-        label = TRUE, 
-        pt.size = 1.5, 
-        label.size = 10) + 
-        NoLegend() 
-```
-]
-.pull-right[
-```{r clusters adjust res 1.5 out, echo = FALSE, eval = TRUE, ref.label='clusters adjust res 1.5'}
-```
-]
+*the path will be different for you
+
 ---
 class: middle, inverse
 
-#Task 2: Finding all marker genes
+#Aim 1: 
+
+- to identify the marker genes for the cell populations
+
 ---
 #Finding markers for all the clusters
 
+FindAllMarkers is the Seurat function that finds the marker genes.
+
 ```{r all markers, eval = FALSE}
-leaf0.2.markers <- FindAllMarkers(leaf.dataset_res0.2, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
+leaf.markers <- FindAllMarkers(leaf.dataset, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
 ```
 
-!That is time-consuming step so I advice to save it upon creation and work with the saved version further on:
+--
+!That is a time-consuming step, so I advice to save the results and work with the saved version further on:
 ```{r saving markers, eval = FALSE}
-write.csv(leaf0.2.markers, file = "Data/leaf_res0.2_markers.csv")
+write.csv(leaf.markers, file = "Data/leaf_markers.csv")
 ```
 
 ```{r loading markers, echo = FALSE}
-leaf0.2.markers<- read.csv(file = "Data/leaf_res0.2_markers.csv", header = TRUE)
+leaf.markers<- read.csv(file = "Data/leaf_markers.csv", header = TRUE)
 ```
 
 ---
 #Vizualizing the markers: table
 ```{r top2 markers}
-leaf0.2.markers %>% 
+leaf.markers %>% 
     group_by(cluster) %>%
     slice_max(n = 2, order_by = avg_log2FC)
 ```
@@ -182,10 +138,10 @@ leaf0.2.markers %>%
 
 .pull-left[
 ``` {r top2 markers heatmap, eval = FALSE}
-top2<-leaf0.2.markers %>% 
+top2<-leaf.markers %>% 
     group_by(cluster) %>%
     slice_max(n = 2, order_by = avg_log2FC)
-DoHeatmap(leaf.dataset_res0.2, 
+DoHeatmap(leaf.dataset, 
           features = top2$gene) + 
           NoLegend()
 ```
@@ -197,31 +153,38 @@ DoHeatmap(leaf.dataset_res0.2,
 ---
 #Vizualizing the markers: violine plot
 
-```{r Vln for markers, fig.width = 16}
-VlnPlot(leaf.dataset_res0.2, features = top2$gene, pt.size = 0.2, ncol = 7)
+```{r Vln for markers, fig.height= 4.5, fig.width= 16}
+top5<- leaf.markers %>% 
+    group_by(cluster) %>%
+    slice_max(n = 5, order_by = avg_log2FC)%>%
+    filter(cluster == 0)
+VlnPlot(leaf.dataset, features = top5$gene, pt.size = 0.2, ncol = 5)
 ```
 
 ---
 #Vizualizing the markers: dot plot
-```{r doc plot}
-DotPlot(leaf.dataset_res0.2, features = top2$gene, cols = c("blue", "red"), dot.scale = 8) +
-    RotatedAxis()
+```{r dot plot, fig.width= 12}
+
+DotPlot(leaf.dataset, features = unique(top2$gene), cols = c("blue", "red"), dot.scale = 8)+ coord_flip()
 ```
 
 ---
 class: middle, inverse
 
-#Task 3: Finding marker genes for specific clusters
+#Aim 2: 
+
+- Finding differentially expressed genes
+
 ---
 #What is different between two close clusters?
 
 .pull-left[
-```{r clusters adjust res 1 out2, echo = FALSE, eval = TRUE, ref.label='clusters adjust res 1'}
+```{r clusters adjust res 1 out2, echo = FALSE, eval = TRUE, ref.label='DimPLot'}
 ```
 ]
 
 .pull-right[
-Here is a DimPlot with 19 clusters detected under resolution = 1.</br>
+Here is a DimPlot with 19 clusters detected under default parameters.</br>
 
 We already noticed that clusters 1 and 2 are very similar in terms of the gene expression.</br>
 
@@ -234,7 +197,7 @@ Lets find it.
 #Differentially expressed genes between two clusters
 
 ```{r find markers between two clusters}
-cluster2.markers <- FindMarkers(leaf.dataset_res1, ident.1 = 2, ident.2 = 1, min.pct = 0.25)
+cluster2.markers <- FindMarkers(leaf.dataset, ident.1 = 2, ident.2 = 1, min.pct = 0.25)
 head(cluster2.markers, n = 8)
 ```
 --
@@ -250,7 +213,7 @@ head(cluster2.markers, n = 8)
 #Differentially expressed genes between two clusters
 ```{r Vln for markers 2 clusters, fig.width = 16}
 top10 <- cluster2.markers %>% slice_max(n = 10, order_by = avg_log2FC) %>% row.names()
-VlnPlot(leaf.dataset_res1, features = top10, pt.size = 0.2, ncol = 5)
+VlnPlot(leaf.dataset, features = top10, pt.size = 0.2, ncol = 5)
 ```
 The data suggests that there is no any specifically expressed gene between two clusters, they all express in both cell populations, but with different expression levels. 
 ---
@@ -258,13 +221,13 @@ The data suggests that there is no any specifically expressed gene between two c
 
 Differentially expressed genes between a set of clusters:
 ```{r markers 3 clusters, eval = FALSE}
-FindMarkers(leaf.dataset_res1, ident.1 = 2, ident.2 = c(1,6), min.pct = 0.25)
+FindMarkers(leaf.dataset, ident.1 = 2, ident.2 = c(1,6), min.pct = 0.25)
 ```
 
 Seurat has several tests for differential expression which can be set with the test.use parameter.
 
 ```{r markers stat, eval = FALSE}
-FindMarkers(leaf.dataset_res1, ident.1 = 2, ident.2 = c(1,6), min.pct = 0.25, test.use = "roc")
+FindMarkers(leaf.dataset, ident.1 = 2, ident.2 = c(1,6), min.pct = 0.25, test.use = "roc")
 ```
 For example, the ROC test returns the ‘classification power’ for any individual marker (ranging from 0 - random, to 1 - perfect).
 Among other alternatives: “wilcox”, “bimod”, “roc”, “t”, “poisson”, “negbinom”, “LR”, “MAST”, “DESeq2”. 
@@ -272,8 +235,70 @@ Among other alternatives: “wilcox”, “bimod”, “roc”, “t”, “pois
 ---
 class: middle, inverse
 
-#Your turn
+#Aim 3
 
-- Make a new seurat object with the FindClusters resolution = 0.1
-- Make a list of TOP5 marker genes 
-- Build a heatmap, dotplot, and violine plot for TOP5 marker genes
+- Annotate cell clusters
+
+---
+#Step 7. Clusters annotation by an expert
+
+.pull-left[
+```{r DimPLot 3, fig.height = 6}
+DimPlot(leaf.dataset, label = TRUE, pt.size = 1.5, label.size = 10) + NoLegend()
+```
+]
+.pull-right[
+```{r featureplot1, fig.height = 6}
+DoHeatmap(leaf.dataset, features = marker_genes) + NoLegend()
+```
+]
+---
+#Step 7. Clusters annotation by an expert
+.pull-left[
+```{r DoHetamap clust, fig.height = 6}
+DoHeatmap(leaf.dataset, features = marker_genes) + NoLegend()
+```
+]
+.pull-right[
+- AT2G05100 is LHCB2, LIGHT-HARVESTING CHLOROPHYLL B-BINDING 2
+- AT5G01530, AT4G10340, AT3G54890, AT3G08940 are other subunits of LIGHT HARVESTING COMPLEX PHOTOSYSTEM II
+- AT1G67090, AT5G38410, AT5G38430 encode Rubisco small subunits (RBCS).
+...
+
+--
+
+What are the clusters 1 and 2 then?
+
+]
+---
+#Step 7. Clusters reannotation
+
+When you are ready to name a cluster you can use `RenameIdents` function. Here we will rename clusters 1 and 2 into 'Mesophyll' cell type.
+```{r clusters annotation}
+leaf.dataset <- RenameIdents(leaf.dataset,
+                             `1`="Mesophyll",
+                             `2`='Mesophyll')
+leaf.dataset$CellTypes<-Idents(leaf.dataset)
+```
+
+---
+#Step 7. Clusters reannotation
+.pull-left[
+```{r DimPLot 4, fig.height = 6}
+DimPlot(leaf.dataset, label = TRUE, pt.size = 1.5, label.size = 10) + NoLegend()
+```
+]
+.pull-right[
+```{r Ara leaf, echo=FALSE, fig.cap="Graphical summary from (Lopez et al., 2021)", out.width = '80%'}
+knitr::include_graphics("Figures/ScLeaf.jpg")
+```
+
+]
+---
+class: middle, inverse
+#Your turn:
+
+- Explore gene expression patterns for your dataset (use heatmaps, dotplots, and violine plot).
+
+- Name a few clusters in your dataset.
+

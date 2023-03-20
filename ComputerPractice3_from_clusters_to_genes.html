@@ -55,32 +55,35 @@ DimPlot(leaf.dataset, label = TRUE, pt.size = 1.5, label.size = 10) + NoLegend()
 DoHeatmap(leaf.dataset, features = marker_genes) + NoLegend()
 ```
 
-&lt;img src="ComputerPractice3_from_clusters_to_genes_files/figure-html/featureplot1-1.png" width="504" /&gt;
+&lt;img src="ComputerPractice3_from_clusters_to_genes_files/figure-html/featureplot-1.png" width="504" /&gt;
 ]
 ---
-#The issue we faced
-It often happens that we cannot annotate all the clusters
+class: inverse, middle
 
-.pull-left[
-&lt;img src="ComputerPractice3_from_clusters_to_genes_files/figure-html/DimPLot1-1.png" width="504" /&gt;
-]
-.pull-right[
-&lt;div class="figure"&gt;
-&lt;img src="Figures/ScLeaf.jpg" alt="Graphical summary from (Lopez et al., 2021)" width="80%" /&gt;
-&lt;p class="caption"&gt;Graphical summary from (Lopez et al., 2021)&lt;/p&gt;
-&lt;/div&gt;
-]
----
-class: middle, inverse
+#The learning goals for this tutorial:
 
-#Task 1: Adjusting the number of clusters
+- how to find and visualize marker genes
+
+- How to find differentially expressed genes?
+
+- How to annotate the clusters?
 
 ---
-#Reprocessing the data to adjust the number of clusters
-Lets rerun the whole processing pipeline till FindClusters function:
+#Step 1: Preparatory
+Lets reuse the dataset we generated in computer practice 2:
+
 
 ```r
-path &lt;- "Data/GSM5097888"
+leaf.dataset&lt;-readRDS('Data/leaf.dataset.rds')
+```
+
+---
+#Step 1: Preparatory
+Or we can generate it once more using the summary script:
+
+
+```r
+path &lt;- 'Data/GSM5097888/'
 leaf.dataset&lt;-Read10X(path, gene.column = 1)
 leaf.dataset &lt;- CreateSeuratObject(counts = leaf.dataset, project = "leaf")
 leaf.dataset[["percent.mt"]] &lt;- PercentageFeatureSet(leaf.dataset, pattern = "^ATM")
@@ -90,77 +93,32 @@ leaf.dataset &lt;- SCTransform(leaf.dataset)
 leaf.dataset &lt;- RunPCA(leaf.dataset,verbose = FALSE)
 leaf.dataset &lt;- RunUMAP(leaf.dataset, dims = 1:50, verbose = FALSE)
 leaf.dataset &lt;- FindNeighbors(leaf.dataset, dims = 1:50, verbose = FALSE)
+leaf.dataset &lt;- FindClusters(leaf.dataset, resolution = 1, verbose = FALSE)
 ```
----
-#Adjusting the clusters number: resolution 1
-.pull-left[
+*the path will be different for you
 
-```r
-leaf.dataset_res1 &lt;- FindClusters(leaf.dataset, 
-                                  resolution = 1, 
-                                  verbose = FALSE)
-DimPlot(leaf.dataset_res1, 
-        label = TRUE, 
-        pt.size = 1.5, 
-        label.size = 10) + 
-        NoLegend() 
-```
-]
-.pull-right[
-&lt;img src="ComputerPractice3_from_clusters_to_genes_files/figure-html/clusters adjust res 1 out-1.png" width="504" /&gt;
-]
----
-#Making less clusters: resolution 0.2
-.pull-left[
-
-```r
-leaf.dataset_res0.2 &lt;- FindClusters(leaf.dataset, 
-                                  resolution = 0.2, 
-                                  verbose = FALSE)
-DimPlot(leaf.dataset_res0.2, 
-        label = TRUE, 
-        pt.size = 1.5, 
-        label.size = 10) + 
-        NoLegend() 
-```
-]
-.pull-right[
-&lt;img src="ComputerPractice3_from_clusters_to_genes_files/figure-html/clusters adjust res 0.2 out-1.png" width="504" /&gt;
-]
----
-#Making more clusters: resolution 1.5
-.pull-left[
-
-```r
-leaf.dataset_res1.5 &lt;- FindClusters(leaf.dataset, 
-                                  resolution = 1.5, 
-                                  verbose = FALSE)
-DimPlot(leaf.dataset_res1.5, 
-        label = TRUE, 
-        pt.size = 1.5, 
-        label.size = 10) + 
-        NoLegend() 
-```
-]
-.pull-right[
-&lt;img src="ComputerPractice3_from_clusters_to_genes_files/figure-html/clusters adjust res 1.5 out-1.png" width="504" /&gt;
-]
 ---
 class: middle, inverse
 
-#Task 2: Finding all marker genes
+#Aim 1: 
+
+- to identify the marker genes for the cell populations
+
 ---
 #Finding markers for all the clusters
 
+FindAllMarkers is the Seurat function that finds the marker genes.
+
 
 ```r
-leaf0.2.markers &lt;- FindAllMarkers(leaf.dataset_res0.2, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
+leaf.markers &lt;- FindAllMarkers(leaf.dataset, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
 ```
 
-!That is time-consuming step so I advice to save it upon creation and work with the saved version further on:
+--
+!That is a time-consuming step, so I advice to save the results and work with the saved version further on:
 
 ```r
-write.csv(leaf0.2.markers, file = "Data/leaf_res0.2_markers.csv")
+write.csv(leaf.markers, file = "Data/leaf_markers.csv")
 ```
 
 
@@ -169,30 +127,27 @@ write.csv(leaf0.2.markers, file = "Data/leaf_res0.2_markers.csv")
 #Vizualizing the markers: table
 
 ```r
-leaf0.2.markers %&gt;% 
+leaf.markers %&gt;% 
     group_by(cluster) %&gt;%
     slice_max(n = 2, order_by = avg_log2FC)
 ```
 
 ```
-## # A tibble: 14 x 8
-## # Groups:   cluster [7]
+## # A tibble: 40 x 8
+## # Groups:   cluster [20]
 ##    X              p_val avg_log2FC pct.1 pct.2 p_val_adj cluster gene     
 ##    &lt;chr&gt;          &lt;dbl&gt;      &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;     &lt;dbl&gt;   &lt;int&gt; &lt;chr&gt;    
-##  1 AT5G38410  0               5.09 0.983 0.462 0               0 AT5G38410
-##  2 AT1G29910  0               4.79 0.942 0.213 0               0 AT1G29910
-##  3 AT5G26000  0               5.42 0.957 0.118 0               1 AT5G26000
-##  4 AT1G04800  0               4.39 0.845 0.061 0               1 AT1G04800
-##  5 AT2G05380  2.74e-207       3.10 0.574 0.166 5.31e-203       2 AT2G05380
-##  6 AT5G55180  0               2.65 0.837 0.243 0               2 AT5G55180
-##  7 AT3G11930  2.91e-228       3.35 0.403 0.047 5.62e-224       3 AT3G11930
-##  8 AT2G02100  1.04e-286       3.22 0.727 0.2   2.02e-282       3 AT2G02100
-##  9 AT5G59690  6.40e-164       4.60 1     0.26  1.24e-159       4 AT5G59690
-## 10 AT5G10400  0               3.99 0.988 0.035 0               4 AT5G10400
-## 11 AT1G118501 4.53e-136       4.01 0.983 0.086 8.75e-132       5 AT1G11850
-## 12 AT1G04110  0               3.33 0.915 0.004 0               5 AT1G04110
-## 13 AT4G23670  2.10e-111       4.96 1     0.085 4.06e-107       6 AT4G23670
-## 14 AT2G385402 2.16e- 46       4.11 1     0.254 4.18e- 42       6 AT2G38540
+##  1 AT5G26000  0               3.31 1     0.194 0               0 AT5G26000
+##  2 AT4G37990  0               3.04 0.993 0.247 0               0 AT4G37990
+##  3 AT1G29920  0               2.58 1     0.508 0               1 AT1G29920
+##  4 AT5G38410  0               2.53 1     0.549 0               1 AT5G38410
+##  5 AT5G384201 2.45e-302       3.36 1     0.303 4.74e-298       2 AT5G38420
+##  6 AT5G384301 0               3.18 0.995 0.2   0               2 AT5G38430
+##  7 AT2G02100  2.35e-145       2.96 0.803 0.26  4.54e-141       3 AT2G02100
+##  8 AT3G18280  1.01e-164       2.66 0.375 0.033 1.96e-160       3 AT3G18280
+##  9 AT3G11930  0               4.63 0.953 0.057 0               4 AT3G11930
+## 10 AT5G023801 2.43e-168       3.78 1     0.761 4.71e-164       4 AT5G02380
+## # ... with 30 more rows
 ```
 ---
 #Vizualizing the markers: DoHeatmap
@@ -200,10 +155,10 @@ leaf0.2.markers %&gt;%
 .pull-left[
 
 ```r
-top2&lt;-leaf0.2.markers %&gt;% 
+top2&lt;-leaf.markers %&gt;% 
     group_by(cluster) %&gt;%
     slice_max(n = 2, order_by = avg_log2FC)
-DoHeatmap(leaf.dataset_res0.2, 
+DoHeatmap(leaf.dataset, 
           features = top2$gene) + 
           NoLegend()
 ```
@@ -216,25 +171,31 @@ DoHeatmap(leaf.dataset_res0.2,
 
 
 ```r
-VlnPlot(leaf.dataset_res0.2, features = top2$gene, pt.size = 0.2, ncol = 7)
+top5&lt;- leaf.markers %&gt;% 
+    group_by(cluster) %&gt;%
+    slice_max(n = 5, order_by = avg_log2FC)%&gt;%
+    filter(cluster == 0)
+VlnPlot(leaf.dataset, features = top5$gene, pt.size = 0.2, ncol = 5)
 ```
 
-&lt;img src="ComputerPractice3_from_clusters_to_genes_files/figure-html/Vln for markers-1.png" width="1152" /&gt;
+&lt;img src="ComputerPractice3_from_clusters_to_genes_files/figure-html/Vln for markers-1.png" width="1008" /&gt;
 
 ---
 #Vizualizing the markers: dot plot
 
 ```r
-DotPlot(leaf.dataset_res0.2, features = top2$gene, cols = c("blue", "red"), dot.scale = 8) +
-    RotatedAxis()
+DotPlot(leaf.dataset, features = unique(top2$gene), cols = c("blue", "red"), dot.scale = 8)+ coord_flip()
 ```
 
-&lt;img src="ComputerPractice3_from_clusters_to_genes_files/figure-html/doc plot-1.png" width="504" /&gt;
+&lt;img src="ComputerPractice3_from_clusters_to_genes_files/figure-html/dot plot-1.png" width="864" /&gt;
 
 ---
 class: middle, inverse
 
-#Task 3: Finding marker genes for specific clusters
+#Aim 2: 
+
+- Finding differentially expressed genes
+
 ---
 #What is different between two close clusters?
 
@@ -243,7 +204,7 @@ class: middle, inverse
 ]
 
 .pull-right[
-Here is a DimPlot with 19 clusters detected under resolution = 1.&lt;/br&gt;
+Here is a DimPlot with 19 clusters detected under default parameters.&lt;/br&gt;
 
 We already noticed that clusters 1 and 2 are very similar in terms of the gene expression.&lt;/br&gt;
 
@@ -257,7 +218,7 @@ Lets find it.
 
 
 ```r
-cluster2.markers &lt;- FindMarkers(leaf.dataset_res1, ident.1 = 2, ident.2 = 1, min.pct = 0.25)
+cluster2.markers &lt;- FindMarkers(leaf.dataset, ident.1 = 2, ident.2 = 1, min.pct = 0.25)
 head(cluster2.markers, n = 8)
 ```
 
@@ -286,7 +247,7 @@ head(cluster2.markers, n = 8)
 
 ```r
 top10 &lt;- cluster2.markers %&gt;% slice_max(n = 10, order_by = avg_log2FC) %&gt;% row.names()
-VlnPlot(leaf.dataset_res1, features = top10, pt.size = 0.2, ncol = 5)
+VlnPlot(leaf.dataset, features = top10, pt.size = 0.2, ncol = 5)
 ```
 
 &lt;img src="ComputerPractice3_from_clusters_to_genes_files/figure-html/Vln for markers 2 clusters-1.png" width="1152" /&gt;
@@ -297,14 +258,14 @@ The data suggests that there is no any specifically expressed gene between two c
 Differentially expressed genes between a set of clusters:
 
 ```r
-FindMarkers(leaf.dataset_res1, ident.1 = 2, ident.2 = c(1,6), min.pct = 0.25)
+FindMarkers(leaf.datase, ident.1 = 2, ident.2 = c(1,6), min.pct = 0.25)
 ```
 
 Seurat has several tests for differential expression which can be set with the test.use parameter.
 
 
 ```r
-FindMarkers(leaf.dataset_res1, ident.1 = 2, ident.2 = c(1,6), min.pct = 0.25, test.use = "roc")
+FindMarkers(leaf.dataset, ident.1 = 2, ident.2 = c(1,6), min.pct = 0.25, test.use = "roc")
 ```
 For example, the ROC test returns the ‘classification power’ for any individual marker (ranging from 0 - random, to 1 - perfect).
 Among other alternatives: “wilcox”, “bimod”, “roc”, “t”, “poisson”, “negbinom”, “LR”, “MAST”, “DESeq2”. 
@@ -312,11 +273,87 @@ Among other alternatives: “wilcox”, “bimod”, “roc”, “t”, “pois
 ---
 class: middle, inverse
 
-#Your turn
+#Aim 3
 
-- Make a new seurat object with the FindClusters resolution = 0.1
-- Make a list of TOP5 marker genes 
-- Build a heatmap, dotplot, and violine plot for TOP5 marker genes
+- Annotate cell clusters
+
+---
+#Step 7. Clusters annotation by an expert
+
+.pull-left[
+
+```r
+DimPlot(leaf.dataset, label = TRUE, pt.size = 1.5, label.size = 10) + NoLegend()
+```
+
+&lt;img src="ComputerPractice3_from_clusters_to_genes_files/figure-html/DimPLot 3-1.png" width="504" /&gt;
+]
+.pull-right[
+
+```r
+DoHeatmap(leaf.dataset, features = marker_genes) + NoLegend()
+```
+
+&lt;img src="ComputerPractice3_from_clusters_to_genes_files/figure-html/featureplot1-1.png" width="504" /&gt;
+]
+---
+#Step 7. Clusters annotation by an expert
+.pull-left[
+
+```r
+DoHeatmap(leaf.dataset, features = marker_genes) + NoLegend()
+```
+
+&lt;img src="ComputerPractice3_from_clusters_to_genes_files/figure-html/DoHetamap clust-1.png" width="504" /&gt;
+]
+.pull-right[
+- AT2G05100 is LHCB2, LIGHT-HARVESTING CHLOROPHYLL B-BINDING 2
+- AT5G01530, AT4G10340, AT3G54890, AT3G08940 are other subunits of LIGHT HARVESTING COMPLEX PHOTOSYSTEM II
+- AT1G67090, AT5G38410, AT5G38430 encode Rubisco small subunits (RBCS).
+...
+
+--
+
+What are the clusters 1 and 2 then?
+
+]
+---
+#Step 7. Clusters reannotation
+
+When you are ready to name a cluster you can use `RenameIdents` function. Here we will rename clusters 1 and 2 into 'Mesophyll' cell type.
+
+```r
+leaf.dataset &lt;- RenameIdents(leaf.dataset,
+                             `1`="Mesophyll",
+                             `2`='Mesophyll')
+leaf.dataset$CellTypes&lt;-Idents(leaf.dataset)
+```
+
+---
+#Step 7. Clusters reannotation
+.pull-left[
+
+```r
+DimPlot(leaf.dataset, label = TRUE, pt.size = 1.5, label.size = 10) + NoLegend()
+```
+
+&lt;img src="ComputerPractice3_from_clusters_to_genes_files/figure-html/DimPLot 4-1.png" width="504" /&gt;
+]
+.pull-right[
+&lt;div class="figure"&gt;
+&lt;img src="Figures/ScLeaf.jpg" alt="Graphical summary from (Lopez et al., 2021)" width="80%" /&gt;
+&lt;p class="caption"&gt;Graphical summary from (Lopez et al., 2021)&lt;/p&gt;
+&lt;/div&gt;
+
+]
+---
+class: middle, inverse
+#Your turn:
+
+- Explore gene expression patterns for your dataset (use heatmaps, dotplots, and violine plot).
+
+- Name a few clusters in your dataset.
+
     </textarea>
 <style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
 <script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
