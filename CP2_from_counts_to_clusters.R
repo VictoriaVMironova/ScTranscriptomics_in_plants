@@ -57,13 +57,13 @@ saveRDS(leaf.dataset,'Data/leaf.dataset.rds')
 
 leaf.dataset <- readRDS('Data/leaf.dataset.rds')
 
-#Step 6. Gene expression vizualization
+#Step 6. Gene expression visualization
 
 FeaturePlot(leaf.dataset,features = 'AT3G24140')
 
 FeaturePlot(leaf.dataset,features = 'AT3G24140',order = T, label = T, pt.size = 3) +
-    scale_color_gradientn(colors = c('lightgray','yellow','red','darkred'))+
-    ggtitle("FAMA")
+  scale_color_gradientn(colors = c('lightgray','yellow','red','darkred'))+
+  ggtitle("FAMA")
 
 FeaturePlot(leaf.dataset,features = c('AT3G24140', 'AT1G11850', 'AT2G05100', 'AT5G38410'), order = T, label = F,pt.size = 3)
 
@@ -73,10 +73,3 @@ DoHeatmap(leaf.dataset, features = marker_genes) + NoLegend()
 
 DoHeatmap(leaf.dataset, features = marker_genes) + NoLegend() + scale_y_discrete(labels = c("AT3G24140" = "FAMA"))
 
-
-#Step 7. Clusters reannotation.
-
-leaf.dataset <- RenameIdents(leaf.dataset,
-                             `1`="Mesophyll",
-                             `2`='Mesophyll')
-leaf.dataset$CellTypes<-Idents(leaf.dataset)

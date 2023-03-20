@@ -1329,7 +1329,7 @@ leaf.dataset &lt;- readRDS('Data/leaf.dataset.rds')
 ```
 ---
 #Step 6. Gene expression vizualization
-FeaturePlot visualizes the features stored in Seurat object. It is ggplot2 object, so you can adjust the color, legend, axes, etc.
+
 .pull-left[
 
 ```r
@@ -1350,7 +1350,7 @@ FeaturePlot(leaf.dataset,features = 'AT3G24140',order = T, label = T,pt.size = 3
 ]
 ---
 #Step 6. Gene expression vizualization
-You can build FeaturePlot it for a number of genes at a time
+You can build FeaturePlot for a number of genes at a time
 
 ```r
 FeaturePlot(leaf.dataset,features = c('AT1G12480', 'AT1G11850', 'AT2G05100', 'AT5G38410'),order = T,label = F,pt.size = 3)
@@ -1368,85 +1368,24 @@ DoHeatmap(leaf.dataset, features = marker_genes) + NoLegend()
 ```
 
 &lt;img src="ComputerPractice2_from_counts_to_clusters_files/figure-html/doHeatmap-1.png" width="504" /&gt;
-
 ---
-#Step 7. Clusters annotation by an expert
-
-.pull-left[
+#Step 6. Adjusting heatmap
 
 ```r
-DimPlot(leaf.dataset, label = TRUE, pt.size = 1.5, label.size = 10) + NoLegend()
+DoHeatmap(leaf.dataset, features = marker_genes) +
+    scale_y_discrete(labels = c("AT3G24140" = "FAMA")) +
+    scale_fill_continuous(type = "viridis")
 ```
 
-&lt;img src="ComputerPractice2_from_counts_to_clusters_files/figure-html/DimPLot 3-1.png" width="504" /&gt;
-]
-.pull-right[
+&lt;img src="ComputerPractice2_from_counts_to_clusters_files/figure-html/doHeatmap adj-1.png" width="504" /&gt;
 
-```r
-DoHeatmap(leaf.dataset, features = marker_genes) + NoLegend()
-```
-
-&lt;img src="ComputerPractice2_from_counts_to_clusters_files/figure-html/featureplot1-1.png" width="504" /&gt;
-]
----
-#Step 7. Clusters annotation by an expert
-.pull-left[
-
-```r
-DoHeatmap(leaf.dataset, features = marker_genes) + NoLegend()
-```
-
-&lt;img src="ComputerPractice2_from_counts_to_clusters_files/figure-html/DoHetamap clust-1.png" width="504" /&gt;
-]
-.pull-right[
-- AT2G05100 is LHCB2, LIGHT-HARVESTING CHLOROPHYLL B-BINDING 2
-- AT5G01530, AT4G10340, AT3G54890, AT3G08940 are other subunits of LIGHT HARVESTING COMPLEX PHOTOSYSTEM II
-- AT1G67090, AT5G38410, AT5G38430 encode Rubisco small subunits (RBCS).
-...
-
---
-
-What are the clusters 1 and 2 then?
-
-]
----
-#Step 7. Clusters reannotation
-
-When you are ready to name a cluster you can use `RenameIdents` function. Here we will rename clusters 1 and 2 into 'Mesophyll' cell type.
-
-```r
-leaf.dataset &lt;- RenameIdents(leaf.dataset,
-                                                           `1`="Mesophyll",
-                                                           `2`='Mesophyll')
-leaf.dataset$CellTypes&lt;-Idents(leaf.dataset)
-```
-
----
-#Step 7. Clusters reannotation
-.pull-left[
-
-```r
-DimPlot(leaf.dataset, label = TRUE, pt.size = 1.5, label.size = 10) + NoLegend()
-```
-
-&lt;img src="ComputerPractice2_from_counts_to_clusters_files/figure-html/DimPLot 4-1.png" width="504" /&gt;
-]
-.pull-right[
-
-```r
-knitr::include_graphics("Figures/ScLeaf.jpg")
-```
-
-![](Figures/ScLeaf.jpg)&lt;!-- --&gt;
-
-]
 ---
 class: middle, inverse
 #Your turn:
 
 - Explore gene expression patterns for your dataset.
 
-- Name a few clusters in your dataset.
+- Try to identify/name the clusters.
 
 
     </textarea>
