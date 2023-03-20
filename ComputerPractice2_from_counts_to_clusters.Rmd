@@ -274,7 +274,7 @@ DoHeatmap(leaf.dataset, features = marker_genes)
 ---
 #Step 6. Adjusting heatmap
 ```{r doHeatmap adj, fig.height= 6}
-DoHeatmap(leaf.dataset, features = marker_genes) + NoLegend()
+DoHeatmap(leaf.dataset, features = marker_genes) + NoLegend()+
     scale_y_discrete(labels = c("AT3G24140" = "FAMA")) +
     scale_fill_continuous(type = "viridis")
 ```
