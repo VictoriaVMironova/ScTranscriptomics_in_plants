@@ -18,6 +18,7 @@ class: left, middle
 ##Seurat: subsetting and integrating the data
 ####Victoria Mironova 
 ####Associate Professor, Department of Plant Systems Physiology
+####RIBES, Radboud University
 &lt;img src="Figures/Theme2.png" width="100px" align = 'right'&gt;
 
 ---
@@ -33,45 +34,12 @@ class: middle, inverse
 - C5. Developmental trajectories, developmental states.
 
 The course materials can be found via [GitHub](https://github.com/VictoriaVMironova/ScTranscriptomics_in_plants)
-
-
-
----
-#The data: scRNA-Seq from leaves
-
-In the computer practice, we are using the single-cell dataset from Arabidopsis leaf:
-.pull-left[
-*Lopez-Anido CB, Vatén A, Smoot NK, Sharma N et al. Single-cell resolution of lineage trajectories in the Arabidopsis stomatal lineage and developing leaf. Dev Cell 2021 Apr 5;56(7):1043-1055.e4.*
-]
-.pull-right[
-&lt;div class="figure"&gt;
-&lt;img src="Figures/ScLeaf.jpg" alt="Graphical summary from (Lopez et al., 2021)" width="80%" /&gt;
-&lt;p class="caption"&gt;Graphical summary from (Lopez et al., 2021)&lt;/p&gt;
-&lt;/div&gt;
-]
----
-#Step 0. Data download
-
-The data is stored on GEO database: https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE167135 &lt;/br&gt;
-In fact, they provided four 10xGenomics samples:
-- GSM509788 (ATML1p 10X Genomics replica 3).
-- GSM509789 (TMMp 10X Genomics replica 1),
-- GSM509790 (TMMp 10X Genomics replica 2),
-- GSM509791 (TMMp 10X Genomics replica 3).
----
-class: inverse, middle
-
-#The learning goals:
-
-- To understand the internal structure of a Seurat object
-
-- To learn how to adjust the number of clusters
-
-- To subset and integrate the Seurat datasets
 ---
 # Step 1. Data loading into R
 
 Lets reuse the Seurat Object we created in the tutorial 2.
+
+
 
 
 ```r
@@ -86,8 +54,22 @@ show(leaf.dataset)
 ##  1 other assay present: RNA
 ##  2 dimensional reductions calculated: pca, umap
 ```
+
 ---
-# Step 2. Exploring Seurat object
+class: inverse, middle
+
+#The learning goals:
+
+- To understand the internal structure of Seurat object
+
+- To learn how to adjust the number of clusters
+
+- To subset single-cell data
+
+- To integrate single-cell datasets
+
+---
+# Aim 1. Understanding Seurat object
 
 
 Table: Seurat object structure.
@@ -14662,19 +14644,24 @@ utils::methods(class = 'Seurat')
 ## see '?methods' for accessing help and source code
 ```
 ---
-#Step 3. Subset Seurat Object
-
-
-```r
-?SeuratObject::subset
+#Step 2.3. Methods to apply to Seurat Object
 ```
 
+```r
+summary(Idents(leaf.dataset))
+```
+
+```
+##   0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17  18  19 
+## 803 732 399 376 321 305 292 264 235 228 211 166 155 111 103  91  77  64  46  42
+```
 ---
 class: inverse, middle
 
 #Aim 2
 
 - Adjust the number of clusters
+
 ---
 #The issue we faced
 It often happens that we cannot annotate all the clusters
@@ -14742,6 +14729,154 @@ DimPlot(leaf.dataset,
 .pull-right[
 &lt;img src="ComputerPractice4_Subset_Integrate_files/figure-html/clusters adjust res 1.5 out-1.png" width="504" /&gt;
 ]
+---
+# Exploring Seurat object at different resolution
+The clusters taken with different resolution can be found in the metadata
+
+
+```r
+head(leaf.dataset@meta.data)
+```
+
+```
+##                    orig.ident nCount_RNA nFeature_RNA percent.mt percent.ct
+## AAACCTGAGATAGTCA-1       leaf       3567         1323 0.02803476  0.7849734
+## AAACCTGAGCTAACTC-1       leaf       2473         1012 0.00000000  1.5770319
+## AAACCTGCAAAGAATC-1       leaf       3281         1168 0.00000000  4.9070405
+## AAACCTGCATGCAATC-1       leaf       7143         2519 0.04199916  0.2099958
+## AAACCTGTCCTAAGTG-1       leaf       2897         1556 0.00000000  0.5177770
+## AAACCTGTCTAGAGTC-1       leaf       3763         1872 0.07972362  0.1594472
+##                    nCount_SCT nFeature_SCT SCT_snn_res.1 seurat_clusters Status
+## AAACCTGAGATAGTCA-1       4482         1323             4               5    old
+## AAACCTGAGCTAACTC-1       4377         1010             1              14    old
+## AAACCTGCAAAGAATC-1       4545         1168             1               1    old
+## AAACCTGCATGCAATC-1       5756         2519             7               8  adult
+## AAACCTGTCCTAAGTG-1       4128         1552            18              20  adult
+## AAACCTGTCTAGAGTC-1       4377         1869            15              17  adult
+##                    SCT_snn_res.0.2 SCT_snn_res.1.5
+## AAACCTGAGATAGTCA-1               3               5
+## AAACCTGAGCTAACTC-1               0              14
+## AAACCTGCAAAGAATC-1               0               1
+## AAACCTGCATGCAATC-1               1               8
+## AAACCTGTCCTAAGTG-1               6              20
+## AAACCTGTCTAGAGTC-1               3              17
+```
+
+---
+#Exploring Seurat object at different resolution
+
+You can change the active identitities (clusters) in the Seurat object any time:
+
+
+```r
+summary(leaf.dataset@active.ident)
+```
+
+```
+##   0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17  18  19 
+## 446 441 402 385 374 320 317 302 265 237 228 210 194 166 165 111  98  91  77  59 
+##  20  21  22 
+##  46  45  42
+```
+
+```r
+leaf.dataset &lt;- SetIdent(leaf.dataset, value = leaf.dataset@meta.data$SCT_snn_res.0.2)
+summary(leaf.dataset@active.ident)
+```
+
+```
+##    0    1    2    3    4    5    6 
+## 1469 1222 1087  966  173   59   45
+```
+
+---
+class: inverse, middle
+
+#Aim 3
+
+- Subset the single-cell data
+
+---
+#Subset the single-cell data
+
+You can take a portion of the cells using subset function: &lt;/br&gt;
+
+?SeuratObject::subset
+
+---
+#Subset the single-cell data: clusters
+
+
+```r
+leaf.dataset &lt;- SetIdent(leaf.dataset, value = leaf.dataset@meta.data$SCT_snn_res.1)
+mesophyll &lt;- subset(leaf.dataset, idents = c("1", "2"))
+DimPlot(mesophyll, label = TRUE, pt.size = 1.5, label.size = 10) + NoLegend()
+```
+
+&lt;img src="ComputerPractice4_Subset_Integrate_files/figure-html/subset idents-1.png" width="504" /&gt;
+
+---
+#Subset the single-cell data: rest clusters 
+
+
+```r
+rest &lt;- subset(leaf.dataset, idents = c(1, 2), invert = TRUE)
+DimPlot(rest, label = TRUE, pt.size = 1.5, label.size = 10) + NoLegend()
+```
+
+&lt;img src="ComputerPractice4_Subset_Integrate_files/figure-html/asubset inverse-1.png" width="504" /&gt;
+---
+#Subset: based on a gene expression
+
+Creating a Seurat object based on gene expression
+
+
+```r
+ATML1_pos &lt;- subset(leaf.dataset, subset = AT4G21750 &gt; 0.1)
+DimPlot(ATML1_pos, label = TRUE, pt.size = 1.5, label.size = 10) + NoLegend()
+```
+
+&lt;img src="ComputerPractice4_Subset_Integrate_files/figure-html/subset gene expression-1.png" width="504" /&gt;
+---
+#Subset: based on genes expression
+
+```r
+ATML1_PDF2 &lt;- subset(leaf.dataset, subset = (AT4G21750 &gt; 0.1 &amp; AT4G04890 &gt;0.1))
+DimPlot(ATML1_PDF2, label = TRUE, pt.size = 1.5, label.size = 10) + NoLegend()
+```
+
+&lt;img src="ComputerPractice4_Subset_Integrate_files/figure-html/subset genes-1.png" width="504" /&gt;
+---
+class: inverse, middle
+
+#Aim 4
+
+- Integrate the single-cell data
+
+---
+#The data: scRNA-Seq from leaves
+
+In the computer practice, we are using the single-cell dataset from Arabidopsis leaf:
+.pull-left[
+*Lopez-Anido CB, Vatén A, Smoot NK, Sharma N et al. Single-cell resolution of lineage trajectories in the Arabidopsis stomatal lineage and developing leaf. Dev Cell 2021 Apr 5;56(7):1043-1055.e4.*
+]
+.pull-right[
+&lt;div class="figure"&gt;
+&lt;img src="Figures/ScLeaf.jpg" alt="Graphical summary from (Lopez et al., 2021)" width="80%" /&gt;
+&lt;p class="caption"&gt;Graphical summary from (Lopez et al., 2021)&lt;/p&gt;
+&lt;/div&gt;
+]
+---
+#The data details
+
+The data is stored on GEO database: https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE167135 &lt;/br&gt;
+In fact, they provided four 10xGenomics samples:
+- GSM509788 (ATML1p 10X Genomics replica 3).
+- GSM509789 (TMMp 10X Genomics replica 1),
+- GSM509790 (TMMp 10X Genomics replica 2),
+- GSM509791 (TMMp 10X Genomics replica 3).
+
+---
     </textarea>
 <style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
 <script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>

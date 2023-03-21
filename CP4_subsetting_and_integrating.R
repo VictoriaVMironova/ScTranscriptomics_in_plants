@@ -66,23 +66,14 @@ summary(leaf.dataset@active.ident)
 leaf.dataset <- SetIdent(leaf.dataset, value = leaf.dataset@meta.data$SCT_snn_res.0.2)
 summary(leaf.dataset@active.ident)
 
-
+#Aim 3 Subset and integrate
 ?SeuratObject::subset
-
 
 #Creating a Seurat object that consists of the cells from cluster 1 and 2
 mesophyll <- subset(leaf.dataset, idents = c("1", "2"))
 DimPlot(mesophyll, label = TRUE, pt.size = 1.5, label.size = 10) + NoLegend()
 
 rest <- subset(leaf.dataset, idents = c(1, 2), invert = TRUE)
-
-#Switch identity class between cluster ID and ...
-#based on https://satijalab.org/seurat/archive/v3.0/interaction_vignette.html
-
-# pbmc$CellType <- Idents(pbmc)
-# # Next, switch the identity class of all cells to reflect replicate ID
-# Idents(pbmc) <- "replicate"
-# DimPlot(pbmc, reduction = "umap")
 
 # What are the cell names of all cells  belonging to the cluster?
 WhichCells(leaf.dataset, idents = "2")

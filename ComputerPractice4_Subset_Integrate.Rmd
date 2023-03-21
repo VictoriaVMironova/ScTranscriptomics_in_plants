@@ -20,6 +20,7 @@ class: left, middle
 ##Seurat: subsetting and integrating the data
 ####Victoria Mironova 
 ####Associate Professor, Department of Plant Systems Physiology
+####RIBES, Radboud University
 <img src="Figures/Theme2.png" width="100px" align = 'right'>
 
 ---
@@ -38,55 +39,36 @@ set.seed(100)
 - C5. Developmental trajectories, developmental states.
 
 The course materials can be found via [GitHub](https://github.com/VictoriaVMironova/ScTranscriptomics_in_plants)
-
-
-```{r libraries,  echo = FALSE}
-library(Seurat)
-library(tidyverse)
-leaf.dataset <- readRDS('Data/leaf.dataset.rds')
-```
----
-#The data: scRNA-Seq from leaves
-
-In the computer practice, we are using the single-cell dataset from Arabidopsis leaf:
-.pull-left[
-*Lopez-Anido CB, Vatén A, Smoot NK, Sharma N et al. Single-cell resolution of lineage trajectories in the Arabidopsis stomatal lineage and developing leaf. Dev Cell 2021 Apr 5;56(7):1043-1055.e4.*
-]
-.pull-right[
-```{r Ara leaf, echo=FALSE, fig.cap="Graphical summary from (Lopez et al., 2021)", out.width = '80%'}
-knitr::include_graphics("Figures/ScLeaf.jpg")
-```
-]
----
-#Step 0. Data download
-
-The data is stored on GEO database: https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE167135 </br>
-In fact, they provided four 10xGenomics samples:
-- GSM509788 (ATML1p 10X Genomics replica 3).
-- GSM509789 (TMMp 10X Genomics replica 1),
-- GSM509790 (TMMp 10X Genomics replica 2),
-- GSM509791 (TMMp 10X Genomics replica 3).
----
-class: inverse, middle
-
-#The learning goals:
-
-- To understand the internal structure of a Seurat object
-
-- To learn how to adjust the number of clusters
-
-- To subset and integrate the Seurat datasets
 ---
 # Step 1. Data loading into R
 
 Lets reuse the Seurat Object we created in the tutorial 2.
 
+```{r libraries,  echo = FALSE}
+library(Seurat)
+library(tidyverse)
+```
+
 ```{r ATML1 seurat object}
 leaf.dataset<-readRDS('Data/leaf.dataset.rds')
 show(leaf.dataset)
 ```
+
 ---
-# Step 2. Exploring Seurat object
+class: inverse, middle
+
+#The learning goals:
+
+- To understand the internal structure of Seurat object
+
+- To learn how to adjust the number of clusters
+
+- To subset single-cell data
+
+- To integrate single-cell datasets
+
+---
+# Aim 1. Understanding Seurat object
 
 ```{r table Seurat, echo = FALSE}
 df <- data.frame(slot = c('assays', 'meta.data', 'active.assay', 'active.ident', 'graphs', 'reductions', 'project.name', 'tools', 'misc', 'version'),
@@ -171,18 +153,18 @@ head(leaf.dataset@meta.data)
 utils::methods(class = 'Seurat')
 ```
 ---
-#Step 3. Subset Seurat Object
-
-```{r add seurat object 6}
-?SeuratObject::subset
+#Step 2.3. Methods to apply to Seurat Object
 ```
-
+```{r, Idents info}
+summary(Idents(leaf.dataset))
+```
 ---
 class: inverse, middle
 
 #Aim 2
 
 - Adjust the number of clusters
+
 ---
 #The issue we faced
 It often happens that we cannot annotate all the clusters
@@ -252,11 +234,96 @@ DimPlot(leaf.dataset,
 ```
 ]
 ---
+# Exploring Seurat object at different resolution
+The clusters taken with different resolution can be found in the metadata
+
+```{r explore resolution}
+head(leaf.dataset@meta.data)
+```
+
+---
+#Exploring Seurat object at different resolution
+
+You can change the active identitities (clusters) in the Seurat object any time:
+
+```{r SetIdent}
+summary(leaf.dataset@active.ident)
+leaf.dataset <- SetIdent(leaf.dataset, value = leaf.dataset@meta.data$SCT_snn_res.0.2)
+summary(leaf.dataset@active.ident)
+```
+
+---
 class: inverse, middle
 
 #Aim 3
 
-- Subset and integrate the single-cell data
+- Subset the single-cell data
 
 ---
+#Subset the single-cell data
 
+You can take a portion of the cells using subset function: </br>
+
+?SeuratObject::subset
+
+---
+#Subset the single-cell data: clusters
+
+```{r subset idents, fig.height = 6}
+leaf.dataset <- SetIdent(leaf.dataset, value = leaf.dataset@meta.data$SCT_snn_res.1)
+mesophyll <- subset(leaf.dataset, idents = c("1", "2"))
+DimPlot(mesophyll, label = TRUE, pt.size = 1.5, label.size = 10) + NoLegend()
+```
+
+---
+#Subset the single-cell data: rest clusters 
+
+```{r asubset inverse, fig.height = 6}
+rest <- subset(leaf.dataset, idents = c(1, 2), invert = TRUE)
+DimPlot(rest, label = TRUE, pt.size = 1.5, label.size = 10) + NoLegend()
+```
+---
+#Subset: based on a gene expression
+
+Creating a Seurat object based on gene expression
+
+```{r subset gene expression, fig.height = 6}
+ATML1_pos <- subset(leaf.dataset, subset = AT4G21750 > 0.1)
+DimPlot(ATML1_pos, label = TRUE, pt.size = 1.5, label.size = 10) + NoLegend()
+```
+---
+#Subset: based on genes expression
+```{r subset genes, fig.height = 6}
+ATML1_PDF2 <- subset(leaf.dataset, subset = (AT4G21750 > 0.1 & AT4G04890 >0.1))
+DimPlot(ATML1_PDF2, label = TRUE, pt.size = 1.5, label.size = 10) + NoLegend()
+```
+---
+class: inverse, middle
+
+#Aim 4
+
+- Integrate the single-cell data
+
+---
+#The data: scRNA-Seq from leaves
+
+In the computer practice, we are using the single-cell dataset from Arabidopsis leaf:
+.pull-left[
+*Lopez-Anido CB, Vatén A, Smoot NK, Sharma N et al. Single-cell resolution of lineage trajectories in the Arabidopsis stomatal lineage and developing leaf. Dev Cell 2021 Apr 5;56(7):1043-1055.e4.*
+]
+.pull-right[
+```{r Ara leaf, echo=FALSE, fig.cap="Graphical summary from (Lopez et al., 2021)", out.width = '80%'}
+knitr::include_graphics("Figures/ScLeaf.jpg")
+```
+]
+---
+#The data details
+
+The data is stored on GEO database: https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE167135 </br>
+In fact, they provided four 10xGenomics samples:
+- GSM509788 (ATML1p 10X Genomics replica 3).
+- GSM509789 (TMMp 10X Genomics replica 1),
+- GSM509790 (TMMp 10X Genomics replica 2),
+- GSM509791 (TMMp 10X Genomics replica 3).
+
+---
