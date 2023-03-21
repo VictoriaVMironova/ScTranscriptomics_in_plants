@@ -18,6 +18,7 @@ class: left, middle
 ##Seurat: from clusters to marker genes
 ####Victoria Mironova 
 ####Associate Professor, Department of Plant Systems Physiology
+####RIBES, Radboud University
 &lt;img src="Figures/Theme2.png" width="100px" align = 'right'&gt;
 
 ---
@@ -62,11 +63,11 @@ class: inverse, middle
 
 #The learning goals for this tutorial:
 
-- how to find and visualize marker genes
+- To find and visualize marker genes
 
-- How to find differentially expressed genes?
+- To find differentially expressed genes
 
-- How to annotate the clusters?
+- To annotate the cell clusters.
 
 ---
 #Step 1: Preparatory
@@ -178,7 +179,7 @@ top5&lt;- leaf.markers %&gt;%
 VlnPlot(leaf.dataset, features = top5$gene, pt.size = 0.2, ncol = 5)
 ```
 
-&lt;img src="ComputerPractice3_from_clusters_to_genes_files/figure-html/Vln for markers-1.png" width="1008" /&gt;
+&lt;img src="ComputerPractice3_from_clusters_to_genes_files/figure-html/Vln for markers-1.png" width="1152" /&gt;
 
 ---
 #Vizualizing the markers: dot plot
@@ -253,12 +254,12 @@ VlnPlot(leaf.dataset, features = top10, pt.size = 0.2, ncol = 5)
 &lt;img src="ComputerPractice3_from_clusters_to_genes_files/figure-html/Vln for markers 2 clusters-1.png" width="1152" /&gt;
 The data suggests that there is no any specifically expressed gene between two clusters, they all express in both cell populations, but with different expression levels. 
 ---
-#Other solutions for markers genes
+#Other solutions for marker genes
 
 Differentially expressed genes between a set of clusters:
 
 ```r
-FindMarkers(leaf.datase, ident.1 = 2, ident.2 = c(1,6), min.pct = 0.25)
+FindMarkers(leaf.dataset, ident.1 = 2, ident.2 = c(1,6), min.pct = 0.25)
 ```
 
 Seurat has several tests for differential expression which can be set with the test.use parameter.
@@ -275,7 +276,7 @@ class: middle, inverse
 
 #Aim 3
 
-- Annotate cell clusters
+- To annotate the cell clusters
 
 ---
 #Step 7. Clusters annotation by an expert
@@ -350,7 +351,7 @@ DimPlot(leaf.dataset, label = TRUE, pt.size = 1.5, label.size = 10) + NoLegend()
 class: middle, inverse
 #Your turn:
 
-- Explore gene expression patterns for your dataset (use heatmaps, dotplots, and violine plot).
+- Explore gene expression patterns for your dataset (use heatmaps, dotplots, and violine plots).
 
 - Name a few clusters in your dataset.
 

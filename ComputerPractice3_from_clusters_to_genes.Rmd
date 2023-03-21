@@ -20,6 +20,7 @@ class: left, middle
 ##Seurat: from clusters to marker genes
 ####Victoria Mironova 
 ####Associate Professor, Department of Plant Systems Physiology
+####RIBES, Radboud University
 <img src="Figures/Theme2.png" width="100px" align = 'right'>
 
 ---
@@ -67,11 +68,11 @@ class: inverse, middle
 
 #The learning goals for this tutorial:
 
-- how to find and visualize marker genes
+- To find and visualize marker genes
 
-- How to find differentially expressed genes?
+- To find differentially expressed genes
 
-- How to annotate the clusters?
+- To annotate the cell clusters.
 
 ---
 #Step 1: Preparatory
@@ -217,7 +218,7 @@ VlnPlot(leaf.dataset, features = top10, pt.size = 0.2, ncol = 5)
 ```
 The data suggests that there is no any specifically expressed gene between two clusters, they all express in both cell populations, but with different expression levels. 
 ---
-#Other solutions for markers genes
+#Other solutions for marker genes
 
 Differentially expressed genes between a set of clusters:
 ```{r markers 3 clusters, eval = FALSE}
@@ -237,7 +238,7 @@ class: middle, inverse
 
 #Aim 3
 
-- Annotate cell clusters
+- To annotate the cell clusters
 
 ---
 #Step 7. Clusters annotation by an expert
@@ -298,7 +299,7 @@ knitr::include_graphics("Figures/ScLeaf.jpg")
 class: middle, inverse
 #Your turn:
 
-- Explore gene expression patterns for your dataset (use heatmaps, dotplots, and violine plot).
+- Explore gene expression patterns for your dataset (use heatmaps, dotplots, and violine plots).
 
 - Name a few clusters in your dataset.
 
