@@ -14877,6 +14877,278 @@ In fact, they provided four 10xGenomics samples:
 - GSM509791 (TMMp 10X Genomics replica 3).
 
 ---
+#Integrating  the replicas: step 1
+
+When we assume that the data is comparable (e.g. replicas) we can merge the Seurat datasets before Normalization. 
+
+- Step 1: Loading the data
+
+```r
+GSM5097889.counts &lt;- Read10X("Data/GSM5097889", gene.column = 1)
+GSM5097890.counts &lt;- Read10X("Data/GSM5097890", gene.column = 1)
+GSM5097891.counts &lt;- Read10X("Data/GSM5097891", gene.column = 1)
+```
+
+---
+#Integrating  the replicas: step 2
+
+- Step 2: Creating Seurat object
+
+
+```r
+GSM5097889&lt;- CreateSeuratObject(counts = GSM5097889.counts, project = "r1")
+GSM5097890 &lt;- CreateSeuratObject(counts = GSM5097890.counts, project = "r2")
+GSM5097891 &lt;- CreateSeuratObject(counts = GSM5097891.counts, project = "r3")
+```
+
+---
+#Integrating  the replicas: step 3
+
+- Step 3: Merging Seurat objects
+
+
+```r
+dim(GSM5097889)
+```
+
+```
+## [1] 31110  4313
+```
+
+```r
+dim(GSM5097890)
+```
+
+```
+## [1] 31110  4092
+```
+
+```r
+dim(GSM5097891)
+```
+
+```
+## [1] 31110  4529
+```
+
+```r
+leaf.dataset.merged&lt;- merge(GSM5097889,c(GSM5097890,GSM5097891))
+dim(leaf.dataset.merged)
+```
+
+```
+## [1] 31110 12934
+```
+---
+#Integrating  the replicas: step 4
+
+- Step 4a: Standard processing procedures: quality control
+
+
+```r
+leaf.dataset.merged[["percent.mt"]] &lt;- PercentageFeatureSet(leaf.dataset.merged, pattern = "^ATM")
+leaf.dataset.merged[["percent.ct"]] &lt;- PercentageFeatureSet(leaf.dataset.merged, pattern = "^ATC")
+VlnPlot(object = leaf.dataset.merged, features = c("nFeature_RNA", "nCount_RNA","percent.ct","percent.mt"), ncol = 5)
+```
+
+&lt;img src="ComputerPractice4_Subset_Integrate_files/figure-html/qq replicas-1.png" width="504" /&gt;
+
+```r
+leaf.dataset &lt;- subset(leaf.dataset.merged, subset = percent.mt &lt;= 20 &amp; percent.ct &lt;= 20 &amp; nCount_RNA &gt;=500)
+dim(leaf.dataset.merged)
+```
+
+```
+## [1] 31110 12934
+```
+---
+#Integrating  the replicas: step 4
+
+- Step 4a: Standard processing procedures: quality control
+
+
+```r
+leaf.dataset.merged &lt;- subset(leaf.dataset.merged, subset = percent.mt &lt;= 20 &amp; percent.ct &lt;= 20 &amp; nCount_RNA &gt;=500)
+dim(leaf.dataset.merged)
+```
+
+```
+## [1] 31110  3198
+```
+---
+#Integrating  the replicas: step 4
+
+- Step 4b: Standard processing procedures: normalization, clustering, saving
+
+
+```r
+leaf.dataset.merged &lt;- SCTransform(leaf.dataset.merged)
+```
+
+```
+## 
+  |                                                                            
+  |                                                                      |   0%
+  |                                                                            
+  |==================                                                    |  25%
+  |                                                                            
+  |===================================                                   |  50%
+  |                                                                            
+  |====================================================                  |  75%
+  |                                                                            
+  |======================================================================| 100%
+## 
+  |                                                                            
+  |                                                                      |   0%
+  |                                                                            
+  |==                                                                    |   3%
+  |                                                                            
+  |=====                                                                 |   7%
+  |                                                                            
+  |=======                                                               |  10%
+  |                                                                            
+  |=========                                                             |  13%
+  |                                                                            
+  |============                                                          |  17%
+  |                                                                            
+  |==============                                                        |  20%
+  |                                                                            
+  |================                                                      |  23%
+  |                                                                            
+  |===================                                                   |  27%
+  |                                                                            
+  |=====================                                                 |  30%
+  |                                                                            
+  |=======================                                               |  33%
+  |                                                                            
+  |==========================                                            |  37%
+  |                                                                            
+  |============================                                          |  40%
+  |                                                                            
+  |==============================                                        |  43%
+  |                                                                            
+  |=================================                                     |  47%
+  |                                                                            
+  |===================================                                   |  50%
+  |                                                                            
+  |=====================================                                 |  53%
+  |                                                                            
+  |========================================                              |  57%
+  |                                                                            
+  |==========================================                            |  60%
+  |                                                                            
+  |============================================                          |  63%
+  |                                                                            
+  |===============================================                       |  67%
+  |                                                                            
+  |=================================================                     |  70%
+  |                                                                            
+  |===================================================                   |  73%
+  |                                                                            
+  |======================================================                |  77%
+  |                                                                            
+  |========================================================              |  80%
+  |                                                                            
+  |==========================================================            |  83%
+  |                                                                            
+  |=============================================================         |  87%
+  |                                                                            
+  |===============================================================       |  90%
+  |                                                                            
+  |=================================================================     |  93%
+  |                                                                            
+  |====================================================================  |  97%
+  |                                                                            
+  |======================================================================| 100%
+## 
+  |                                                                            
+  |                                                                      |   0%
+  |                                                                            
+  |==                                                                    |   3%
+  |                                                                            
+  |=====                                                                 |   7%
+  |                                                                            
+  |=======                                                               |  10%
+  |                                                                            
+  |=========                                                             |  13%
+  |                                                                            
+  |============                                                          |  17%
+  |                                                                            
+  |==============                                                        |  20%
+  |                                                                            
+  |================                                                      |  23%
+  |                                                                            
+  |===================                                                   |  27%
+  |                                                                            
+  |=====================                                                 |  30%
+  |                                                                            
+  |=======================                                               |  33%
+  |                                                                            
+  |==========================                                            |  37%
+  |                                                                            
+  |============================                                          |  40%
+  |                                                                            
+  |==============================                                        |  43%
+  |                                                                            
+  |=================================                                     |  47%
+  |                                                                            
+  |===================================                                   |  50%
+  |                                                                            
+  |=====================================                                 |  53%
+  |                                                                            
+  |========================================                              |  57%
+  |                                                                            
+  |==========================================                            |  60%
+  |                                                                            
+  |============================================                          |  63%
+  |                                                                            
+  |===============================================                       |  67%
+  |                                                                            
+  |=================================================                     |  70%
+  |                                                                            
+  |===================================================                   |  73%
+  |                                                                            
+  |======================================================                |  77%
+  |                                                                            
+  |========================================================              |  80%
+  |                                                                            
+  |==========================================================            |  83%
+  |                                                                            
+  |=============================================================         |  87%
+  |                                                                            
+  |===============================================================       |  90%
+  |                                                                            
+  |=================================================================     |  93%
+  |                                                                            
+  |====================================================================  |  97%
+  |                                                                            
+  |======================================================================| 100%
+```
+
+```r
+leaf.dataset.merged &lt;- RunPCA(leaf.dataset.merged,verbose = FALSE)
+leaf.dataset.merged &lt;- RunUMAP(leaf.dataset.merged, dims = 1:50, verbose = FALSE)
+leaf.dataset.merged &lt;- FindNeighbors(leaf.dataset.merged, dims = 1:50, verbose = FALSE)
+leaf.dataset.merged &lt;- FindClusters(leaf.dataset.merged, resolution = 1,verbose = FALSE)
+saveRDS(leaf.dataset.merged, 'Data/leaf.dataset.merged.rds')
+```
+---
+#Integrating  the replicas: step 5
+
+- Step 5: Standard processing procedures: vizualization
+
+
+```r
+DimPlot(leaf.dataset.merged, group.by = "orig.ident")
+```
+
+&lt;img src="ComputerPractice4_Subset_Integrate_files/figure-html/vizualizing replicas-1.png" width="504" /&gt;
+
+```r
+DimPlot(leaf.dataset.merged, label = TRUE)
+```
+
+&lt;img src="ComputerPractice4_Subset_Integrate_files/figure-html/vizualizing replicas-2.png" width="504" /&gt;
     </textarea>
 <style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
 <script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>

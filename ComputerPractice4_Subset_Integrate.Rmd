@@ -327,3 +327,80 @@ In fact, they provided four 10xGenomics samples:
 - GSM509791 (TMMp 10X Genomics replica 3).
 
 ---
+#Integrating  the replicas: step 1
+
+When we assume that the data is comparable (e.g. replicas) we can merge the Seurat datasets before Normalization. 
+
+- Step 1: Loading the data
+```{r loading replicas}
+GSM5097889.counts <- Read10X("Data/GSM5097889", gene.column = 1)
+GSM5097890.counts <- Read10X("Data/GSM5097890", gene.column = 1)
+GSM5097891.counts <- Read10X("Data/GSM5097891", gene.column = 1)
+```
+
+---
+#Integrating  the replicas: step 2
+
+- Step 2: Creating Seurat object
+
+```{r Seurat object replicas}
+GSM5097889<- CreateSeuratObject(counts = GSM5097889.counts, project = "r1")
+GSM5097890 <- CreateSeuratObject(counts = GSM5097890.counts, project = "r2")
+GSM5097891 <- CreateSeuratObject(counts = GSM5097891.counts, project = "r3")
+```
+
+---
+#Integrating  the replicas: step 3
+
+- Step 3: Merging Seurat objects
+
+```{r merging replicas}
+dim(GSM5097889)
+dim(GSM5097890)
+dim(GSM5097891)
+leaf.dataset.merged<- merge(GSM5097889,c(GSM5097890,GSM5097891))
+dim(leaf.dataset.merged)
+```
+---
+#Integrating  the replicas: step 4
+
+- Step 4a: Standard processing procedures: quality control
+
+```{r qq replicas, fig.height = 6.5}
+leaf.dataset.merged[["percent.mt"]] <- PercentageFeatureSet(leaf.dataset.merged, pattern = "^ATM")
+leaf.dataset.merged[["percent.ct"]] <- PercentageFeatureSet(leaf.dataset.merged, pattern = "^ATC")
+VlnPlot(object = leaf.dataset.merged, features = c("nFeature_RNA", "nCount_RNA","percent.ct","percent.mt"), ncol = 5)
+leaf.dataset <- subset(leaf.dataset.merged, subset = percent.mt <= 20 & percent.ct <= 20 & nCount_RNA >=500)
+dim(leaf.dataset.merged)
+```
+---
+#Integrating  the replicas: step 4
+
+- Step 4a: Standard processing procedures: quality control
+
+```{r qq2 replicas}
+leaf.dataset.merged <- subset(leaf.dataset.merged, subset = percent.mt <= 20 & percent.ct <= 20 & nCount_RNA >=500)
+dim(leaf.dataset.merged)
+```
+---
+#Integrating  the replicas: step 4
+
+- Step 4b: Standard processing procedures: normalization, clustering, saving
+
+```{r SCT replicas}
+leaf.dataset.merged <- SCTransform(leaf.dataset.merged)
+leaf.dataset.merged <- RunPCA(leaf.dataset.merged,verbose = FALSE)
+leaf.dataset.merged <- RunUMAP(leaf.dataset.merged, dims = 1:50, verbose = FALSE)
+leaf.dataset.merged <- FindNeighbors(leaf.dataset.merged, dims = 1:50, verbose = FALSE)
+leaf.dataset.merged <- FindClusters(leaf.dataset.merged, resolution = 1,verbose = FALSE)
+saveRDS(leaf.dataset.merged, 'Data/leaf.dataset.merged.rds')
+```
+---
+#Integrating  the replicas: step 5
+
+- Step 5: Standard processing procedures: vizualization
+
+```{r vizualizing replicas, fig.height = 6.5}
+DimPlot(leaf.dataset.merged, group.by = "orig.ident")
+DimPlot(leaf.dataset.merged, label = TRUE)
+```

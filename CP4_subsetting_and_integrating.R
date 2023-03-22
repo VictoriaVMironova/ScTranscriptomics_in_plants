@@ -6,6 +6,7 @@
 
 library(Seurat)
 library(tidyverse)
+library(patchwork)
 
 set.seed(42)
 
@@ -66,7 +67,7 @@ summary(leaf.dataset@active.ident)
 leaf.dataset <- SetIdent(leaf.dataset, value = leaf.dataset@meta.data$SCT_snn_res.0.2)
 summary(leaf.dataset@active.ident)
 
-#Aim 3 Subset and integrate
+#Aim 3 Subset the data
 ?SeuratObject::subset
 
 #Creating a Seurat object that consists of the cells from cluster 1 and 2
@@ -93,3 +94,48 @@ DimPlot(ATML1_PDF2, label = TRUE, pt.size = 1.5, label.size = 10) + NoLegend()
 
 # Visualize co-expression of two features simultaneously
 FeaturePlot(leaf.dataset, features = c("AT4G21750", "AT4G04890"), order = T, pt.size = 1.5, blend = TRUE)                     
+
+#Aim 4 Integrate the data
+
+#Step 1: Loading counts data
+GSM5097889.counts <- Read10X("Data/GSM5097889", gene.column = 1)
+GSM5097890.counts <- Read10X("Data/GSM5097890", gene.column = 1)
+GSM5097891.counts <- Read10X("Data/GSM5097891", gene.column = 1)
+
+#Step 2: creating Seurat objects
+GSM5097889<- CreateSeuratObject(counts = GSM5097889.counts, project = "r1")
+GSM5097890 <- CreateSeuratObject(counts = GSM5097890.counts, project = "r2")
+GSM5097891 <- CreateSeuratObject(counts = GSM5097891.counts, project = "r3")
+
+#Step 3: Merging Seurat objects
+dim(GSM5097889)
+dim(GSM5097890)
+dim(GSM5097891)
+leaf.dataset.merged<- merge(GSM5097889,c(GSM5097890,GSM5097891))
+dim(leaf.dataset.merged)
+
+#Step 4a: Standard pipeline: quality control
+leaf.dataset.merged[["percent.mt"]] <- PercentageFeatureSet(leaf.dataset.merged, pattern = "^ATM")
+leaf.dataset.merged[["percent.ct"]] <- PercentageFeatureSet(leaf.dataset.merged, pattern = "^ATC")
+VlnPlot(object = leaf.dataset.merged, features = c("nFeature_RNA", "nCount_RNA","percent.ct","percent.mt"), ncol = 5)
+leaf.dataset <- subset(leaf.dataset.merged, subset = percent.mt <= 20 & percent.ct <= 20 & nCount_RNA >=500)
+dim(leaf.dataset.merged)
+
+leaf.dataset.merged <- subset(leaf.dataset.merged, subset = percent.mt <= 20 & percent.ct <= 20 & nCount_RNA >=500)
+VlnPlot(object = leaf.dataset.merged, features = c("nFeature_RNA", "nCount_RNA","percent.ct","percent.mt"), ncol = 5)
+dim(leaf.dataset.merged)
+
+
+#Step 4b: Standard processing procedures: normalization, clustering, saving
+
+leaf.dataset.merged <- SCTransform(leaf.dataset.merged)
+leaf.dataset.merged <- RunPCA(leaf.dataset.merged,verbose = FALSE)
+leaf.dataset.merged <- RunUMAP(leaf.dataset.merged, dims = 1:50, verbose = FALSE)
+leaf.dataset.merged <- FindNeighbors(leaf.dataset.merged, dims = 1:50, verbose = FALSE)
+leaf.dataset.merged <- FindClusters(leaf.dataset.merged, resolution = 1,verbose = FALSE)
+saveRDS(leaf.dataset.merged, 'Data/leaf.dataset.merged.rds')
+
+#Step 5: Standard processing procedures: vizualization 
+DimPlot(leaf.dataset.merged, group.by = "orig.ident")
+DimPlot(leaf.dataset.merged, label = TRUE)
+
