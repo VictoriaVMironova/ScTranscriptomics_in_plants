@@ -19,7 +19,7 @@ leaf.dataset<-Read10X(path, gene.column = 1)
 leaf.dataset <- CreateSeuratObject(counts = leaf.dataset, project = "leaf")
 leaf.dataset[["percent.mt"]] <- PercentageFeatureSet(leaf.dataset, pattern = "^ATM")
 leaf.dataset[["percent.ct"]] <- PercentageFeatureSet(leaf.dataset, pattern = "^ATC")
-leaf.dataset <- subset(leaf.dataset, subset = percent.mt <= 20 & percent.ct <= 20 & nCount_RNA >=1000)
+leaf.dataset <- subset(leaf.dataset, subset = percent.mt <= 20 & percent.ct <= 20 & nCount_RNA >=500)
 leaf.dataset <- SCTransform(leaf.dataset)
 leaf.dataset <- RunPCA(leaf.dataset,verbose = FALSE)
 leaf.dataset <- RunUMAP(leaf.dataset, dims = 1:50, verbose = FALSE)
@@ -44,19 +44,23 @@ top2
 
 DoHeatmap(leaf.dataset, features = top2$gene) + NoLegend()
 
-VlnPlot(leaf.dataset, features = top2$gene, pt.size = 0.2, ncol = 7)
+top5<- leaf.markers %>% 
+  group_by(cluster) %>%
+  slice_max(n = 5, order_by = avg_log2FC)%>%
+  filter(cluster == 0)
+VlnPlot(leaf.dataset, features = top5$gene, pt.size = 0.2, ncol = 5)
 
 DotPlot(leaf.dataset, features = unique(top2$gene), cols = c("blue", "red"), dot.scale = 8)+ coord_flip()
 
 #Aim 2: Differentially expressed genes between two clusters
 
-cluster2.markers <- FindMarkers(leaf.dataset, ident.1 = 2, ident.2 = 1, min.pct = 0.25)
+cluster2.markers <- FindMarkers(leaf.dataset, ident.1 = 2, ident.2 = 3, min.pct = 0.25)
 head(cluster2.markers, n = 8)
 
 top10 <- cluster2.markers %>% 
             slice_max(n = 10, order_by = avg_log2FC) %>% 
             row.names()
-VlnPlot(leaf.dataset_res1, features = top10, pt.size = 0.2, ncol = 5)
+VlnPlot(leaf.dataset, features = top10, pt.size = 0.2, ncol = 5)
 
 #FindMarkers(leaf.dataset, ident.1 = 2, ident.2 = c(1,6), min.pct = 0.25)
 #FindMarkers(leaf.dataset, ident.1 = 2, ident.2 = c(1,6), min.pct = 0.25, test.use = "roc")
@@ -68,8 +72,8 @@ marker_genes<- c('AT1G11850', 'AT3G24140', 'AT2G05100', 'AT5G01530', 'AT4G10340'
 DoHeatmap(leaf.dataset, features = marker_genes) + NoLegend() 
 
 leaf.dataset <- RenameIdents(leaf.dataset,
-                             `1`="Mesophyll",
-                             `2`='Mesophyll')
+                             `1`="Cluster A",
+                             `2`='cluster B')
 leaf.dataset$CellTypes<-Idents(leaf.dataset)
 
 DoHeatmap(leaf.dataset, features = marker_genes) + NoLegend() 

@@ -6,7 +6,6 @@
 
 library(Seurat)
 library(tidyverse)
-library(patchwork)
 
 set.seed(42)
 
