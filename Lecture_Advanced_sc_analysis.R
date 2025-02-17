@@ -35,11 +35,9 @@ plotReducedDim(sce.sling, dimred = "UMAP", colour_by = "slingPseudotime_1") +
 
 colData(sce)
 
-sce.sling2 <- slingshot(sce, start.clus= "6", cluster=sce$seurat_clusters, reducedDim='PCA')
+sce.sling2 <- slingshot(sce, start.clus= "3", cluster=sce$seurat_clusters, reducedDim='PCA')
 pseudo.paths <- slingPseudotime(sce.sling2)
 head(pseudo.paths)
-sce.nest <- runUMAP(sce.nest, dimred="PCA")
-reducedDim(sce.sling2, "UMAP") <- reducedDim(sce.nest, "UMAP")
 
 # Taking the rowMeans just gives us a single pseudo-time for all cells. Cells
 # in segments that are shared across paths have similar pseudo-time values in 
@@ -48,11 +46,16 @@ shared.pseudo <- rowMeans(pseudo.paths, na.rm=TRUE)
 
 # Need to loop over the paths and add each one separately.
 gg <- plotUMAP(sce.sling2, colour_by=I(shared.pseudo))
+ggsave(filename = "Figures/UMAP_pseudotime_slingshot.png", plot = gg, width = 6, height = 5, dpi = 150)
+
+
 embedded <- embedCurves(sce.sling2, "UMAP")
 embedded <- slingCurves(embedded)
 for (path in embedded) {
   embedded <- data.frame(path$s[path$ord,])
-  gg <- gg + geom_path(data=embedded, aes(x=Dim.1, y=Dim.2), size=1.2)
+  gg <- gg + geom_path(data=embedded, aes(x=umap_1, y=umap_2), size=1.2)
 }
 
 gg
+ggsave(filename = "Figures/UMAP_pseudotime_slingshot_traj.png", plot = gg, width = 6, height = 5, dpi = 150)
+
