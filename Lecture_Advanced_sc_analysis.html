@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>scOmics in plants</title>
+    <meta charset="utf-8" />
+    <script src="Lecture_Advanced_sc_analysis_files/header-attrs-2.29/header-attrs.js"></script>
+    <link href="Lecture_Advanced_sc_analysis_files/remark-css-0.0.1/default.css" rel="stylesheet" />
+    <link href="Lecture_Advanced_sc_analysis_files/remark-css-0.0.1/metropolis.css" rel="stylesheet" />
+    <link href="Lecture_Advanced_sc_analysis_files/remark-css-0.0.1/metropolis-fonts.css" rel="stylesheet" />
+  </head>
+  <body>
+    <textarea id="source">
+
+class: left, middle
+####Lecture
+
+##Decoding Cell Secrets: 
+##Cutting-Edge Computational Tools for scRNA-Seq
+####Victoria Mironova 
+####Associate Professor, Department of Plant and Animal Biology, Radboud University
+&lt;img src="Figures/Theme2.png" width="100px" align = 'right'&gt;
+
+---
+class: middle
+
+
+
+&lt;img src="Figures/TypesOfPain.JPG" width="50%" /&gt;
+
+---
+class: inverse, middle
+
+#The learning goals for this lecture:
+
+- Overview of the standard workflow (with Seurat)
+
+- Pseudotime analysis
+
+- Datasets integration and meta-analysis
+
+
+---
+#Data in the lecture
+
+In the lecture and computer practice, we use the single-cell dataset from Arabidopsis leaf:
+.pull-left[
+*Lopez-Anido CB, Vatén A, Smoot NK, Sharma N et al. Single-cell resolution of lineage trajectories in the Arabidopsis stomatal lineage and developing leaf. Dev Cell 2021 Apr 5;56(7):1043-1055.e4.*
+
+
+
+``` r
+leaf.dataset &lt;- readRDS('Data/leaf.dataset.rds')
+```
+
+]
+.pull-right[
+&lt;div class="figure"&gt;
+&lt;img src="Figures/ScLeaf.jpg" alt="Graphical summary from (Lopez et al., 2021)" width="80%" /&gt;
+&lt;p class="caption"&gt;Graphical summary from (Lopez et al., 2021)&lt;/p&gt;
+&lt;/div&gt;
+]
+
+---
+#Standard workflow: overview
+
+&lt;img src="Figures/StandardPipeline.png" width="60%" /&gt;
+
+---
+class: middle, inverse
+
+#The standard pipeline: hands-on
+
+You will test the standard pipeline in the computer practice: 
+- C1. From reads to counts
+- C2. From counts to clusters
+- C3. From clusters to marker genes
+- C4. Subsetting and integrating the data.
+
+The course materials can be found via [GitHub](https://github.com/VictoriaVMironova/ScTranscriptomics_in_plants)
+---
+#Standard pipeline: cell clusters
+
+.pull-left[
+
+##UMAP
+Uniform Manifold Approximation and Projection for Dimension Reduction.
+The goal of UMAP is to place similar cells together and different cells further apart on a plot.
+
+&lt;img src="Lecture_Advanced_sc_analysis_files/figure-html/DimPlot2-1.png" width="80%" /&gt;
+]
+.pull-right[
+##Cell Clusters
+✅  What are clusters? Groups of cells with similar gene expression profiles.
+
+
+✅  How are they identified? Clustering methods (Louvain, Leiden) based on shared transcriptomic features.
+
+
+✅  Do they always represent known cell types? Not really...
+
+
+"Clusters: Are they real cell types or just computational wishful thinking?" 😆
+]
+
+---
+#Reading UMAPs
+
+UMAP is a non-deterministic, manifold learning algorithm that can change cluster positioning across runs due to variations in implementation, parameter settings, or updates in Seurat.
+
+.pull-left[
+
+##version 2024
+- 19 clusters
+&lt;img src="Figures/DimPLot_version2024.png" width="70%" /&gt;
+
+]
+
+.pull-right[
+##version 2025
+- 17 clusters
+&lt;img src="Lecture_Advanced_sc_analysis_files/figure-html/DimPlot3-1.png" width="70%" /&gt;
+
+]
+
+---
+#Summary on dealing with UMAPs
+
+✅ UMAP is stochastic → Always set a seed for reproducibility.
+
+
+``` r
+set.seed(100)
+```
+
+✅ Software updates can change defaults → Always check and document parameter settings.
+
+✅ Save and reuse UMAP coordinates if needed:
+
+``` r
+leaf.dataset[["umap"]] &lt;- leaf.dataset@reductions$umap
+```
+
+✅ UMAP depends on preprocessing → Feature selection, PCA, and clustering affect embeddings.
+
+
+``` r
+leaf.dataset &lt;- RunUMAP(leaf.dataset, dims = 1:30, n.neighbors = 20, min.dist = 0.3)
+leaf.dataset &lt;- RunUMAP(leaf.dataset)
+```
+
+✅ Compare UMAPs critically → A shift in cluster position may not mean a change in biology!
+
+---
+class: middle, inverse
+
+#Developmental trajectories and pseudotime
+
+- the pseudotime concept
+- pseudotime inference methods
+- pros and cons
+
+The course materials can be found via [GitHub](https://github.com/VictoriaVMironova/ScTranscriptomics_in_plants)
+
+---
+#Developmental trajectories
+
+.pull-left[
+
+##Developmental progression
+&lt;img src="Figures/DevelopmentalTrajectory.png" width="30%" /&gt;
+
+]
+
+.pull-right[
+##Pseudotime
+
+A computational approach to order single cells along a developmental progression.
+&lt;img src="Figures/Pseudotime.png" width="70%" /&gt;
+
+
+]
+---
+# Challenges in applying pseudotime to plants
+
+✅   Non-linear differentiation trajectories in plant tissues
+
+✅    Lack of validated marker genes for all transition states
+ 
+✅   Protoplasting effects on trajectory inference
+---
+#Pseudotime inference methods (selected)
+
+In R:
+-	Monocle3: Principal graph learning for trajectory inference
+-	Slingshot: Cluster-based trajectory modeling
+- CytoTrace: measuring cell differentiation level
+
+In Python:
+-	Diffusion Pseudotime (DPT): Distance-based ordering (Scanpy)
+-	RNA Velocity: Predicting future cell states using spliced/unspliced RNA (scVelo)
+
+---
+#Monocle - Graph-Based Pseudotime
+
+.pull-left[
+✅ How it works:
+
+Uses graph-based trajectory inference to learn a principal tree structure.
+Infers multiple branching points and orders cells automatically.
+No clustering required, but clustering improves accuracy.
+
+✅ Best for:
+
+Complex branched trajectories.
+Systems with multiple fate decisions (e.g., cell-type specialization).
+
+❌ Weaknesses:
+
+Topology-sensitive (overfitting if too many branches).
+Can be affected by batch effects.
+
+📌 Use Case: regeneration with multiple differentiation fates and transiting stages.
+]
+
+.pull-right[
+![Slingshot Figure](Figures/HSMM_trajectory.png)
+]
+
+---
+#Monocle - use case
+
+
+---
+#Slingshot - Smooth Curve Fitting on Clusters
+
+.pull-left[
+✅ How it works:
+
+Requires pre-defined clusters.
+Constructs a minimum spanning tree (MST) and fits principal curves through clusters.
+Assigns pseudotime along these curves.
+
+✅ Best for:
+
+Smooth, gradual differentiation processes.
+Systems where clusters are well-defined.
+
+❌ Weaknesses:
+
+Requires clustering first.
+Not ideal for highly branched trajectories.
+
+📌 Use Case: root development where cells differentiate along a smooth gradient.
+]
+.pull-right[
+
+To identify a trajectory, one might imagine simply “fitting” a one-dimensional curve so that it passes through the cloud of cells in the high-dimensional expression space.
+
+![Slingshot Figure](Figures/slingshot_fig1.jpg)
+
+]
+---
+#Slingshot: use case
+
+
+``` r
+sce &lt;- as.SingleCellExperiment(leaf.dataset)
+sce.sling &lt;- slingshot(sce, reducedDim='PCA')
+embedded &lt;- embedCurves(sce.sling, "UMAP")
+embedded &lt;- slingCurves(embedded)[[1]]
+embedded &lt;- data.frame(embedded$s[embedded$ord,])
+plotReducedDim(sce.sling, dimred = "UMAP", colour_by = "slingPseudotime_1") +
+  geom_path(data = embedded, aes(x = umap_1, y = umap_2), size = 1.2, color = "black")
+```
+
+&lt;img src="Figures/UMAP_pseudotime_slingshot_traj.png" width="40%" /&gt;
+---
+#Slingshot: different starting points
+
+.pull-left[
+
+``` r
+sce.sling2 &lt;- slingshot(sce, cluster=sce$seurat_clusters, reducedDim='PCA')
+```
+&lt;img src="Figures/UMAP_pseudotime_slingshot_traj.png" width="80%" /&gt;
+]
+.pull-right[
+
+``` r
+sce.sling2 &lt;- slingshot(sce, start.clus= "9", cluster=sce$seurat_clusters, reducedDim='PCA')
+```
+
+&lt;img src="Figures/UMAP_pseudotime_slingshot_traj_9.png" width="80%" /&gt;
+]
+---
+#CytoTrace: differentiation state
+
+.pull-left[
+✅ How it works:
+
+Cells with higher total gene counts are assumed to be less differentiated.
+Cells with fewer expressed genes are placed later in pseudotime.
+
+✅ Best for:
+
+Developmental processes where differentiation is driven by gene count complexity.
+Simple linear trajectories with no major branching.
+
+❌ Weaknesses:
+
+Cannot model complex branching.
+May be affected by batch effects or sequencing depth differences.
+
+📌 Use Case: Root tip differentiation where gene expression complexity declines from stem cells to specialized cells.
+]
+
+.pull-right[
+![Slingshot Figure](Figures/367_405_f1.jpeg)
+
+]
+
+---
+#CytoTrace: use case
+
+
+---
+#Summary on pseudotime inference methods
+
+There are no one pseudotime inference method that always order single cells properly according to the differentiation progression. But one can improve the output choosing the method wisely:
+
+
+Table: Summary of Pseudotime Methods
+
+|Scenario                                          |Best_Method           |
+|:-------------------------------------------------|:---------------------|
+|Simple, linear differentiation                    |CytoTRACE             |
+|Complex, multi-branch differentiation             |Monocle3              |
+|Continuous, smooth differentiation                |Slingshot             |
+|No predefined clusters available                  |CytoTRACE or Monocle3 |
+|Predefined clusters available                     |Slingshot             |
+|Global differentiation potential (early vs. late) |CytoTRACE             |
+
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"ratio": "16:9",
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+// add `data-at-shortcutkeys` attribute to <body> to resolve conflicts with JAWS
+// screen reader (see PR #262)
+(function(d) {
+  let res = {};
+  d.querySelectorAll('.remark-help-content table tr').forEach(tr => {
+    const t = tr.querySelector('td:nth-child(2)').innerText;
+    tr.querySelectorAll('td:first-child .key').forEach(key => {
+      const k = key.innerText;
+      if (/^[a-z]$/.test(k)) res[k] = t;  // must be a single letter (key)
+    });
+  });
+  d.body.setAttribute('data-at-shortcutkeys', JSON.stringify(res));
+})(document);
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

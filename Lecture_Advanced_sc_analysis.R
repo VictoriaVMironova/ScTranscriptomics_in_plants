@@ -30,12 +30,14 @@ embedded <- slingCurves(embedded)[[1]]
 embedded <- data.frame(embedded$s[embedded$ord,])
 plotReducedDim(sce.sling, dimred = "UMAP", colour_by = "slingPseudotime_1") +
   geom_path(data = embedded, aes(x = umap_1, y = umap_2), size = 1.2, color = "black")
+ggsave(filename = "Figures/UMAP_pseudotime_slingshot_traj.png", plot = last_plot(), width = 6, height = 5, dpi = 150)
+
 
 #with starting point
 
 colData(sce)
 
-sce.sling2 <- slingshot(sce, start.clus= "3", cluster=sce$seurat_clusters, reducedDim='PCA')
+sce.sling2 <- slingshot(sce, start.clus= "9", cluster=sce$seurat_clusters, reducedDim='PCA')
 pseudo.paths <- slingPseudotime(sce.sling2)
 head(pseudo.paths)
 
@@ -46,16 +48,19 @@ shared.pseudo <- rowMeans(pseudo.paths, na.rm=TRUE)
 
 # Need to loop over the paths and add each one separately.
 gg <- plotUMAP(sce.sling2, colour_by=I(shared.pseudo))
-ggsave(filename = "Figures/UMAP_pseudotime_slingshot.png", plot = gg, width = 6, height = 5, dpi = 150)
+gg
+ggsave(filename = "Figures/UMAP_pseudotime_slingshot_9.png", plot = gg, width = 6, height = 5, dpi = 150)
 
 
 embedded <- embedCurves(sce.sling2, "UMAP")
 embedded <- slingCurves(embedded)
 for (path in embedded) {
   embedded <- data.frame(path$s[path$ord,])
-  gg <- gg + geom_path(data=embedded, aes(x=umap_1, y=umap_2), size=1.2)
+  gg <- gg + geom_path(data=embedded, aes(x=umap_1, y=umap_2), size=0.5)
 }
 
 gg
-ggsave(filename = "Figures/UMAP_pseudotime_slingshot_traj.png", plot = gg, width = 6, height = 5, dpi = 150)
+ggsave(filename = "Figures/UMAP_pseudotime_slingshot_traj_9.png", plot = gg, width = 6, height = 5, dpi = 150)
 
+#good thing to read
+#https://broadinstitute.github.io/2019_scWorkshop/functional-pseudotime-analysis.html#diffusion-map-pseudotime
