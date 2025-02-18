@@ -18,6 +18,7 @@ set.seed(100)
 #                       'terra', 'ggrastr'))
 devtools::install_github('cole-trapnell-lab/monocle3')
 
+library(tradeSeq)
 library(scater)
 library(slingshot)
 library(SingleCellExperiment)
@@ -51,19 +52,54 @@ plot_cells(cds, label_groups_by_cluster = FALSE, label_leaves = FALSE, label_bra
 ggsave("Figures/monocle3_traj.png", plot = last_plot(), width = 2.5, height = 2.5, dpi = 150)
 #ggsave("Figures/monocle3_traj_2024.png", plot = last_plot(), width = 2.5, height = 2.5, dpi = 150)
 
+
 cds <- order_cells(cds)
 plot_cells(cds, color_cells_by = "pseudotime", label_cell_groups = FALSE, label_leaves = FALSE, 
            label_branch_points = FALSE)
 ggsave("Figures/monocle3_traj_pseudo.png", plot = last_plot(), width = 4, height = 2.5, dpi = 150)
 
+# To explore DEG
 # Step 3: Fit a GAM model to test for DE genes along pseudotime
 de_genes <- graph_test(cds, neighbor_graph="principal_graph", cores=4)
 
 # Step 4: Select significant genes (adjust p-value cutoff as needed)
-sig_genes <- rownames(subset(de_genes, q_value < 0.05))
+sig_genes <- rownames(subset(de_genes, q_value < 0.0001))
+head(sig_genes)
+
 
 # Step 5: Plot gene expression of top significant genes over pseudotime
-plot_genes_in_pseudotime(cds[sig_genes[1:6],], min_expr=0.5)
+
+rowData(cds)$gene_short_name <- rownames(cds)
+
+plot_cells(cds, genes=c("AT1G01050", "AT1G01120", "AT1G04110", "AT1G08380"),
+           show_trajectory_graph=FALSE,
+           label_cell_groups=FALSE,
+           label_leaves=FALSE)
+ggsave("Figures/monocle3_sig_genes.png", plot = last_plot(), width = 4, height = 4, dpi = 150)
+#DEG_genes <- c('AT1G12480', 'AT1G11850', 'AT2G05100', 'AT5G38410')
+DEG_genes <- c("AT1G01050", "AT1G01120", "AT1G04110", "AT1G08380")
+DEG_lineage_cds <- cds[rowData(cds)$gene_short_name %in% DEG_genes]
+DEG_lineage_cds <- order_cells(DEG_lineage_cds)
+
+plot_genes_in_pseudotime(DEG_lineage_cds, min_expr=0.00001)
+
+ggsave("Figures/monocle3_sig_genes_profiles.png", plot = last_plot(), width = 4, height = 4, dpi = 150)
+
+
+# # Ensure your CDS object is properly preprocessed
+# cds <- preprocess_cds(cds, num_dim = 50)  # Perform PCA
+# cds <- reduce_dimension(cds)  # Reduce dimensions (UMAP / PCA / TSNE)
+# cds <- cluster_cells(cds, resolution=1e-5)
+# plot_cells(cds, color_cells_by = "cluster")
+
+
+gene_module_df<-find_gene_modules(cds[sig_genes,], resolution=c(10^seq(-6,-1)))
+
+cell_group_df <- tibble::tibble(cell=row.names(colData(cds)), 
+                                cell_group = clusters(cds))
+agg_mat <- aggregate_gene_expression(cds, gene_module_df, cell_group_df)
+row.names(agg_mat) <- stringr::str_c("Module ", row.names(agg_mat))
+pheatmap::pheatmap(agg_mat, scale="column", clustering_method="ward.D2", filename = "Figures/monocle3_modules.png")
 
 #slingshot ----
 
@@ -79,8 +115,6 @@ embedded <- data.frame(embedded$s[embedded$ord,])
 plotReducedDim(sce.sling, dimred = "UMAP", colour_by = "slingPseudotime_1") +
   geom_path(data = embedded, aes(x = umap_1, y = umap_2), size = 1.2, color = "black")
 ggsave(filename = "Figures/UMAP_pseudotime_slingshot_traj.png", plot = last_plot(), width = 6, height = 5, dpi = 150)
-
-
 
 #with starting point
 
@@ -111,7 +145,25 @@ for (path in embedded) {
 gg
 ggsave(filename = "Figures/UMAP_pseudotime_slingshot_traj_9.png", plot = gg, width = 6, height = 5, dpi = 150)
 
+#To explore the DEG
+# Extract pseudotime values
+pseudotime <- slingPseudotime(sce)
 
+# Step 3: Fit Generalized Additive Models (GAM) using tradeSeq
+# Prepare for differential expression analysis
+# Define lineage structure from Slingshot
+lineages <- slingLineages(sce)
+
+# Fit negative binomial GAM for each gene across pseudotime
+counts <- counts(sce)  # Extract raw counts for modeling
+gam_model <- fitGAM(counts = counts, pseudotime = pseudotime, cellWeights = slingCurveWeights(sce))
+
+# Step 4: Test for differential expression
+de_res <- associationTest(gam_model)  # Tests for significant changes along pseudotime
+de_genes <- rownames(subset(de_res, pval < 0.05))  # Select significant genes
+
+# Step 5: Visualize gene expression trends
+plotSmoothers(gam_model, counts, gene = de_genes[1])  # Example for one gene
 
 
 # Cytotrace ----
