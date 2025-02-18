@@ -6,9 +6,18 @@
 
 
 set.seed(100)
+#for slingshot:
 #BiocManager::install("slingshot")
 #BiocManager::install("SingleCellExperiment",force = TRUE)
 #BiocManager::install("scater")
+
+#to install monocle3
+#BiocManager::install(c('BiocGenerics', 'DelayedArray', 'DelayedMatrixStats',
+#                       'limma', 'lme4', 'S4Vectors', 'SingleCellExperiment',
+#                       'SummarizedExperiment', 'batchelor', 'HDF5Array',
+#                       'terra', 'ggrastr'))
+devtools::install_github('cole-trapnell-lab/monocle3')
+
 library(scater)
 library(slingshot)
 library(SingleCellExperiment)
@@ -16,7 +25,6 @@ library(Seurat)
 library(tidyverse)
 library(monocle3)
 library(SeuratWrappers)
-library(SeuratData)
 library(CytoTRACE)
 
 leaf.dataset <- readRDS('Data/leaf.dataset.rds')
@@ -47,6 +55,15 @@ cds <- order_cells(cds)
 plot_cells(cds, color_cells_by = "pseudotime", label_cell_groups = FALSE, label_leaves = FALSE, 
            label_branch_points = FALSE)
 ggsave("Figures/monocle3_traj_pseudo.png", plot = last_plot(), width = 4, height = 2.5, dpi = 150)
+
+# Step 3: Fit a GAM model to test for DE genes along pseudotime
+de_genes <- graph_test(cds, neighbor_graph="principal_graph", cores=4)
+
+# Step 4: Select significant genes (adjust p-value cutoff as needed)
+sig_genes <- rownames(subset(de_genes, q_value < 0.05))
+
+# Step 5: Plot gene expression of top significant genes over pseudotime
+plot_genes_in_pseudotime(cds[sig_genes[1:6],], min_expr=0.5)
 
 #slingshot ----
 

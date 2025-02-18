@@ -68,7 +68,7 @@ knitr::include_graphics("Figures/ScLeaf.jpg")
 ]
 
 ---
-#Standard workflow: overview
+#Single-cell data analysis workflow: overview
 
 ```{r workflow, echo=FALSE, out.width = '60%'}
 knitr::include_graphics("Figures/StandardPipeline.png")
