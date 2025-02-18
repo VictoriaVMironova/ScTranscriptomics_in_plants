@@ -120,7 +120,7 @@ UMAP is a non-deterministic, manifold learning algorithm that can change cluster
 
 .pull-left[
 
-##version 2024
+##version 2024, Seurat 4.3.1.
 - 19 clusters
 ```{r version2024, fig.height = 6, echo = FALSE, out.width = '70%'}
 knitr::include_graphics("Figures/DimPLot_version2024.png")
@@ -129,12 +129,11 @@ knitr::include_graphics("Figures/DimPLot_version2024.png")
 ]
 
 .pull-right[
-##version 2025
+##version 2025, Seurat 5.2.1.
 - 17 clusters
 ```{r DimPlot3, fig.height = 6, echo = FALSE, out.width = '70%'}
 DimPlot(leaf.dataset, label = TRUE, pt.size = 1.5, label.size = 10) + NoLegend()
 ```
-
 ]
 
 ---
@@ -148,17 +147,17 @@ set.seed(100)
 
 ✅ Software updates can change defaults → Always check and document parameter settings.
 
-✅ Save and reuse UMAP coordinates if needed:
-```{r, umap1, eval = FALSE}
-leaf.dataset[["umap"]] <- leaf.dataset@reductions$umap
-
-```
-
 ✅ UMAP depends on preprocessing → Feature selection, PCA, and clustering affect embeddings.
 
 ```{r, umap, eval = FALSE}
 leaf.dataset <- RunUMAP(leaf.dataset, dims = 1:30, n.neighbors = 20, min.dist = 0.3)
 leaf.dataset <- RunUMAP(leaf.dataset)
+
+```
+
+✅ Save and reuse UMAP coordinates if needed:
+```{r, umap1, eval = FALSE}
+leaf.dataset[["umap"]] <- leaf.dataset@reductions$umap
 
 ```
 
@@ -170,10 +169,10 @@ class: middle, inverse
 #Developmental trajectories and pseudotime
 
 - the pseudotime concept
+- pros and cons in plants
 - pseudotime inference methods
-- pros and cons
 
-The course materials can be found via [GitHub](https://github.com/VictoriaVMironova/ScTranscriptomics_in_plants)
+The script behind the lecture can be found via [GitHub](https://github.com/VictoriaVMironova/ScTranscriptomics_in_plants)
 
 ---
 #Developmental trajectories
@@ -181,7 +180,7 @@ The course materials can be found via [GitHub](https://github.com/VictoriaVMiron
 .pull-left[
 
 ##Developmental progression
-```{r root, echo=FALSE, out.width = '30%'}
+```{r root1, echo=FALSE, out.width = '25%'}
 knitr::include_graphics("Figures/DevelopmentalTrajectory.png")
 ```
 
@@ -198,17 +197,18 @@ knitr::include_graphics("Figures/Pseudotime.png")
 
 ]
 ---
-# Challenges in applying pseudotime to plants
-.pull-left[
+#Pseudotime inference in plants
 
-##Developmental progression
-```{r root, echo=FALSE, out.width = '30%'}
+.pull-left[
+##Benefits: no cell migration
+```{r root2, echo=FALSE, out.width = '25%'}
 knitr::include_graphics("Figures/DevelopmentalTrajectory.png")
 ```
-
+Pseudotime should reflect to a developmental gradient in plant tissue
 ]
-
 .pull-right[
+##Challenges
+
 ✅   Non-linear differentiation trajectories in plant tissues
 
 ✅    Lack of validated marker genes for all transition states
@@ -241,12 +241,12 @@ No clustering required, but clustering improves accuracy.
 ✅ Best for:
 
 Complex branched trajectories.
-Systems with multiple fate decisions (e.g., cell-type specialization).
+Systems with multiple fate decisions.
 
 ❌ Weaknesses:
 
 Topology-sensitive (overfitting if too many branches).
-Can be affected by batch effects.
+Affected by batch effects.
 
 📌 Use Case: regeneration with multiple differentiation fates and transiting stages.
 ]
@@ -256,10 +256,32 @@ Can be affected by batch effects.
 ]
 
 ---
-#Monocle - use case
-
-
+#Monocle3 - use case
+```{r monocle3, eval = FALSE}
+cds <- as.cell_data_set(leaf.dataset)
+cds <- cluster_cells(cds)
+cds <- learn_graph(cds)
+plot_cells(cds, label_groups_by_cluster = FALSE, label_leaves = FALSE, label_branch_points = FALSE)
+```
+.pull-left[
+![Monocle 2025](Figures/monocle3_traj.png)
+]
+.pull-right[
+![Monocle 2025 pseudo](Figures/monocle3_traj_pseudo.png)
+]
 ---
+#Trajectory Inference ≠ Absolute Truth
+Same Data, Different Paths: How Monocle3’s Output Changes
+.pull-left[
+###version 2024. Seurat 4.3.1.
+![Monocle 2024](Figures/monocle3_traj_2024.png)
+]
+.pull-right[
+###version 2025. Seurat 5.2.1.
+![Monocle 2025](Figures/monocle3_traj.png)
+]
+---
+
 #Slingshot - Smooth Curve Fitting on Clusters
 
 .pull-left[
@@ -354,7 +376,41 @@ May be affected by batch effects or sequencing depth differences.
 ---
 #CytoTrace: use case
 
+```{r cyto, eval = FALSE}
+mat <- GetAssayData(object = leaf.dataset, assay = "RNA", slot = "counts")
 
+as_matrix <- function(mat){
+  tmp <- matrix(data=0L, nrow = mat@Dim[1], ncol = mat@Dim[2])
+  row_pos <- mat@i+1
+  col_pos <- findInterval(seq(mat@x)-1,mat@p[-1])+1
+  val <- mat@x
+  
+  for (i in seq_along(val)){
+    tmp[row_pos[i],col_pos[i]] <- val[i]
+  }
+  row.names(tmp) <- mat@Dimnames[[1]]
+  colnames(tmp) <- mat@Dimnames[[2]]
+  return(tmp)
+}
+
+mat2 <- as_matrix(mat)
+cyto <- CytoTRACE(mat2,ncores = 1,enableFast = T)
+cyto$CytoTRACE <- 1-cyto$CytoTRACE
+
+leaf.dataset <- AddMetaData(
+  object = leaf.dataset,
+  metadata = cyto$CytoTRACE,
+  col.name = "differentiation_level"
+)
+```
+---
+#CytoTrace: use case
+```{r cyto plot, eval = FALSE}
+FeaturePlot(leaf.dataset, features = c('differentiation_level'))+
+  scale_color_gradientn(colors = c('#018571','#dfc27d','#a6611a'))+theme(text=element_text(size=30))+NoAxes()
+```
+
+![CytoTrace Figure](Figures/Cytotrace_Diff_2024.png)
 ---
 #Summary on pseudotime inference methods
 
@@ -369,15 +425,11 @@ summary_table <- data.frame(
     "Simple, linear differentiation",
     "Complex, multi-branch differentiation",
     "Continuous, smooth differentiation",
-    "No predefined clusters available",
-    "Predefined clusters available",
-    "Global differentiation potential (early vs. late)"
+   "Global differentiation potential (early vs. late)"
   ),
   Best_Method = c(
     "CytoTRACE",
     "Monocle3",
-    "Slingshot",
-    "CytoTRACE or Monocle3",
     "Slingshot",
     "CytoTRACE"
   )
@@ -386,4 +438,20 @@ summary_table <- data.frame(
 # Print the table
 kable(summary_table, caption = "Summary of Pseudotime Methods")
 ```
+
+---
+class: middle, inverse
+
+##I Have a Pseudotime Trajectory… What’s Next?
+
+- Identify Key Genes Driving Transitions
+- Detect Branching Events and Cell Fate Decisions
+- Map Pseudotime to Functional Pathways
+- Integrate Pseudotime with Other Data Modalities
+
+---
+
+---
+#I Have a Pseudotime Trajectory… What’s Next?
+
 

@@ -48,7 +48,7 @@ In the lecture and computer practice, we use the single-cell dataset from Arabid
 
 
 
-``` r
+```r
 leaf.dataset &lt;- readRDS('Data/leaf.dataset.rds')
 ```
 
@@ -109,17 +109,16 @@ UMAP is a non-deterministic, manifold learning algorithm that can change cluster
 
 .pull-left[
 
-##version 2024
+##version 2024, Seurat 4.3.1.
 - 19 clusters
 &lt;img src="Figures/DimPLot_version2024.png" width="70%" /&gt;
 
 ]
 
 .pull-right[
-##version 2025
+##version 2025, Seurat 5.2.1.
 - 17 clusters
 &lt;img src="Lecture_Advanced_sc_analysis_files/figure-html/DimPlot3-1.png" width="70%" /&gt;
-
 ]
 
 ---
@@ -128,24 +127,24 @@ UMAP is a non-deterministic, manifold learning algorithm that can change cluster
 ✅ UMAP is stochastic → Always set a seed for reproducibility.
 
 
-``` r
+```r
 set.seed(100)
 ```
 
 ✅ Software updates can change defaults → Always check and document parameter settings.
 
-✅ Save and reuse UMAP coordinates if needed:
-
-``` r
-leaf.dataset[["umap"]] &lt;- leaf.dataset@reductions$umap
-```
-
 ✅ UMAP depends on preprocessing → Feature selection, PCA, and clustering affect embeddings.
 
 
-``` r
+```r
 leaf.dataset &lt;- RunUMAP(leaf.dataset, dims = 1:30, n.neighbors = 20, min.dist = 0.3)
 leaf.dataset &lt;- RunUMAP(leaf.dataset)
+```
+
+✅ Save and reuse UMAP coordinates if needed:
+
+```r
+leaf.dataset[["umap"]] &lt;- leaf.dataset@reductions$umap
 ```
 
 ✅ Compare UMAPs critically → A shift in cluster position may not mean a change in biology!
@@ -156,10 +155,10 @@ class: middle, inverse
 #Developmental trajectories and pseudotime
 
 - the pseudotime concept
+- pros and cons in plants
 - pseudotime inference methods
-- pros and cons
 
-The course materials can be found via [GitHub](https://github.com/VictoriaVMironova/ScTranscriptomics_in_plants)
+The script behind the lecture can be found via [GitHub](https://github.com/VictoriaVMironova/ScTranscriptomics_in_plants)
 
 ---
 #Developmental trajectories
@@ -167,7 +166,7 @@ The course materials can be found via [GitHub](https://github.com/VictoriaVMiron
 .pull-left[
 
 ##Developmental progression
-&lt;img src="Figures/DevelopmentalTrajectory.png" width="30%" /&gt;
+&lt;img src="Figures/DevelopmentalTrajectory.png" width="25%" /&gt;
 
 ]
 
@@ -180,13 +179,23 @@ A computational approach to order single cells along a developmental progression
 
 ]
 ---
-# Challenges in applying pseudotime to plants
+#Pseudotime inference in plants
+
+.pull-left[
+##Benefits: no cell migration
+&lt;img src="Figures/DevelopmentalTrajectory.png" width="25%" /&gt;
+Pseudotime should reflect to a developmental gradient in plant tissue
+]
+.pull-right[
+##Challenges
 
 ✅   Non-linear differentiation trajectories in plant tissues
 
 ✅    Lack of validated marker genes for all transition states
  
 ✅   Protoplasting effects on trajectory inference
+]
+
 ---
 #Pseudotime inference methods (selected)
 
@@ -212,12 +221,12 @@ No clustering required, but clustering improves accuracy.
 ✅ Best for:
 
 Complex branched trajectories.
-Systems with multiple fate decisions (e.g., cell-type specialization).
+Systems with multiple fate decisions.
 
 ❌ Weaknesses:
 
 Topology-sensitive (overfitting if too many branches).
-Can be affected by batch effects.
+Affected by batch effects.
 
 📌 Use Case: regeneration with multiple differentiation fates and transiting stages.
 ]
@@ -227,10 +236,33 @@ Can be affected by batch effects.
 ]
 
 ---
-#Monocle - use case
+#Monocle3 - use case
 
-
+```r
+cds &lt;- as.cell_data_set(leaf.dataset)
+cds &lt;- cluster_cells(cds)
+cds &lt;- learn_graph(cds)
+plot_cells(cds, label_groups_by_cluster = FALSE, label_leaves = FALSE, label_branch_points = FALSE)
+```
+.pull-left[
+![Monocle 2025](Figures/monocle3_traj.png)
+]
+.pull-right[
+![Monocle 2025 pseudo](Figures/monocle3_traj_pseudo.png)
+]
 ---
+#Trajectory Inference ≠ Absolute Truth
+Same Data, Different Paths: How Monocle3’s Output Changes
+.pull-left[
+###version 2024. Seurat 4.3.1.
+![Monocle 2024](Figures/monocle3_traj_2024.png)
+]
+.pull-right[
+###version 2025. Seurat 5.2.1.
+![Monocle 2025](Figures/monocle3_traj.png)
+]
+---
+
 #Slingshot - Smooth Curve Fitting on Clusters
 
 .pull-left[
@@ -263,7 +295,7 @@ To identify a trajectory, one might imagine simply “fitting” a one-dimension
 #Slingshot: use case
 
 
-``` r
+```r
 sce &lt;- as.SingleCellExperiment(leaf.dataset)
 sce.sling &lt;- slingshot(sce, reducedDim='PCA')
 embedded &lt;- embedCurves(sce.sling, "UMAP")
@@ -279,14 +311,14 @@ plotReducedDim(sce.sling, dimred = "UMAP", colour_by = "slingPseudotime_1") +
 
 .pull-left[
 
-``` r
+```r
 sce.sling2 &lt;- slingshot(sce, cluster=sce$seurat_clusters, reducedDim='PCA')
 ```
 &lt;img src="Figures/UMAP_pseudotime_slingshot_traj.png" width="80%" /&gt;
 ]
 .pull-right[
 
-``` r
+```r
 sce.sling2 &lt;- slingshot(sce, start.clus= "9", cluster=sce$seurat_clusters, reducedDim='PCA')
 ```
 
@@ -323,6 +355,42 @@ May be affected by batch effects or sequencing depth differences.
 #CytoTrace: use case
 
 
+```r
+mat &lt;- GetAssayData(object = leaf.dataset, assay = "RNA", slot = "counts")
+
+as_matrix &lt;- function(mat){
+  tmp &lt;- matrix(data=0L, nrow = mat@Dim[1], ncol = mat@Dim[2])
+  row_pos &lt;- mat@i+1
+  col_pos &lt;- findInterval(seq(mat@x)-1,mat@p[-1])+1
+  val &lt;- mat@x
+  
+  for (i in seq_along(val)){
+    tmp[row_pos[i],col_pos[i]] &lt;- val[i]
+  }
+  row.names(tmp) &lt;- mat@Dimnames[[1]]
+  colnames(tmp) &lt;- mat@Dimnames[[2]]
+  return(tmp)
+}
+
+mat2 &lt;- as_matrix(mat)
+cyto &lt;- CytoTRACE(mat2,ncores = 1,enableFast = T)
+cyto$CytoTRACE &lt;- 1-cyto$CytoTRACE
+
+leaf.dataset &lt;- AddMetaData(
+  object = leaf.dataset,
+  metadata = cyto$CytoTRACE,
+  col.name = "differentiation_level"
+)
+```
+---
+#CytoTrace: use case
+
+```r
+FeaturePlot(leaf.dataset, features = c('differentiation_level'))+
+  scale_color_gradientn(colors = c('#018571','#dfc27d','#a6611a'))+theme(text=element_text(size=30))+NoAxes()
+```
+
+![CytoTrace Figure](Figures/Cytotrace_Diff_2024.png)
 ---
 #Summary on pseudotime inference methods
 
@@ -331,14 +399,28 @@ There are no one pseudotime inference method that always order single cells prop
 
 Table: Summary of Pseudotime Methods
 
-|Scenario                                          |Best_Method           |
-|:-------------------------------------------------|:---------------------|
-|Simple, linear differentiation                    |CytoTRACE             |
-|Complex, multi-branch differentiation             |Monocle3              |
-|Continuous, smooth differentiation                |Slingshot             |
-|No predefined clusters available                  |CytoTRACE or Monocle3 |
-|Predefined clusters available                     |Slingshot             |
-|Global differentiation potential (early vs. late) |CytoTRACE             |
+|Scenario                                          |Best_Method |
+|:-------------------------------------------------|:-----------|
+|Simple, linear differentiation                    |CytoTRACE   |
+|Complex, multi-branch differentiation             |Monocle3    |
+|Continuous, smooth differentiation                |Slingshot   |
+|Global differentiation potential (early vs. late) |CytoTRACE   |
+
+---
+class: middle, inverse
+
+##I Have a Pseudotime Trajectory… What’s Next?
+
+- Identify Key Genes Driving Transitions
+- Detect Branching Events and Cell Fate Decisions
+- Map Pseudotime to Functional Pathways
+- Integrate Pseudotime with Other Data Modalities
+
+---
+
+---
+#I Have a Pseudotime Trajectory… What’s Next?
+
 
     </textarea>
 <style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>

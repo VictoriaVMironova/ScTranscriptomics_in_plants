@@ -1,5 +1,9 @@
 #Lecture on advanced scNA-Seq analysis
 
+#good thing to read
+#https://broadinstitute.github.io/2019_scWorkshop/functional-pseudotime-analysis.html
+
+
 
 set.seed(100)
 #BiocManager::install("slingshot")
@@ -10,16 +14,43 @@ library(slingshot)
 library(SingleCellExperiment)
 library(Seurat)
 library(tidyverse)
+library(monocle3)
+library(SeuratWrappers)
+library(SeuratData)
+library(CytoTRACE)
 
 leaf.dataset <- readRDS('Data/leaf.dataset.rds')
+#leaf.dataset <- readRDS('Data/leaf.dataset_2024.rds')
 DimPlot(leaf.dataset, label = TRUE, pt.size = 1.5, label.size = 10) + NoLegend()
 
+# Monocle3 ----
 
-#slingshot
+#Monocle3 offers clustering and analysis procedures as well as Seurat. You can right about it more here:
+#https://cole-trapnell-lab.github.io/monocle3/docs/getting_started/
+#but you can also apply it on seurat object http://htmlpreview.github.io/?https://github.com/satijalab/seurat-wrappers/blob/master/docs/monocle3.html
+
+cds <- as.cell_data_set(leaf.dataset)
+
+cds <- cluster_cells(cds)
+plot_cells(cds, show_trajectory_graph = TRUE)
+p2 <- plot_cells(cds, color_cells_by = "partition", show_trajectory_graph = TRUE)
+wrap_plots(p1, p2)
+
+
+cds <- learn_graph(cds)
+plot_cells(cds, label_groups_by_cluster = FALSE, label_leaves = FALSE, label_branch_points = FALSE)
+
+ggsave("Figures/monocle3_traj.png", plot = last_plot(), width = 2.5, height = 2.5, dpi = 150)
+#ggsave("Figures/monocle3_traj_2024.png", plot = last_plot(), width = 2.5, height = 2.5, dpi = 150)
+
+cds <- order_cells(cds)
+plot_cells(cds, color_cells_by = "pseudotime", label_cell_groups = FALSE, label_leaves = FALSE, 
+           label_branch_points = FALSE)
+ggsave("Figures/monocle3_traj_pseudo.png", plot = last_plot(), width = 4, height = 2.5, dpi = 150)
+
+#slingshot ----
 
 # one curve
-
-
 sce <- as.SingleCellExperiment(leaf.dataset)
 sce.sling <- slingshot(sce, reducedDim='PCA')
 head(sce.sling$slingPseudotime_1)
@@ -31,6 +62,7 @@ embedded <- data.frame(embedded$s[embedded$ord,])
 plotReducedDim(sce.sling, dimred = "UMAP", colour_by = "slingPseudotime_1") +
   geom_path(data = embedded, aes(x = umap_1, y = umap_2), size = 1.2, color = "black")
 ggsave(filename = "Figures/UMAP_pseudotime_slingshot_traj.png", plot = last_plot(), width = 6, height = 5, dpi = 150)
+
 
 
 #with starting point
@@ -62,5 +94,45 @@ for (path in embedded) {
 gg
 ggsave(filename = "Figures/UMAP_pseudotime_slingshot_traj_9.png", plot = gg, width = 6, height = 5, dpi = 150)
 
-#good thing to read
-#https://broadinstitute.github.io/2019_scWorkshop/functional-pseudotime-analysis.html#diffusion-map-pseudotime
+
+
+
+# Cytotrace ----
+
+mat <- GetAssayData(object = leaf.dataset, assay = "RNA", slot = "counts")
+
+as_matrix <- function(mat){
+  tmp <- matrix(data=0L, nrow = mat@Dim[1], ncol = mat@Dim[2])
+  row_pos <- mat@i+1
+  col_pos <- findInterval(seq(mat@x)-1,mat@p[-1])+1
+  val <- mat@x
+  
+  for (i in seq_along(val)){
+    tmp[row_pos[i],col_pos[i]] <- val[i]
+  }
+  row.names(tmp) <- mat@Dimnames[[1]]
+  colnames(tmp) <- mat@Dimnames[[2]]
+  return(tmp)
+}
+
+
+mat2 <- as_matrix(mat)
+
+
+cyto_ra <- CytoTRACE(mat2,ncores = 1,enableFast = T)
+
+cyto_ra$CytoTRACE <- 1-cyto_ra$CytoTRACE
+
+leaf.dataset <- AddMetaData(
+  object = leaf.dataset,
+  metadata = cyto_ra$CytoTRACE,
+  col.name = "differentiation_level"
+)
+
+FeaturePlot(leaf.dataset, features = c('differentiation_level'))+
+  scale_color_gradientn(colors = c('#018571','#dfc27d','#a6611a'))+theme(text=element_text(size=10))+NoAxes()
+
+ggsave(filename = "Figures/Cytotrace_Diff_2024.png", plot = last_plot(), width = 4, height = 3.5, dpi = 150)
+
+
+
