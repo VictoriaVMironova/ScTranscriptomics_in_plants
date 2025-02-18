@@ -53,17 +53,20 @@ class: inverse, middle
 
 In the lecture and computer practice, we use the single-cell dataset from Arabidopsis leaf:
 .pull-left[
-*Lopez-Anido CB, Vatén A, Smoot NK, Sharma N et al. Single-cell resolution of lineage trajectories in the Arabidopsis stomatal lineage and developing leaf. Dev Cell 2021 Apr 5;56(7):1043-1055.e4.*
+![Screenshot](Figures/Lopez-Anido.png)
+
+*Lopez-Anido CB, Vatén A, Smoot NK, Sharma N et al. Dev Cell 2021 Apr 5;56(7):1043-1055.e4.*
+
+
+]
+.pull-right[
+```{r Ara leaf, echo=FALSE, out.width = '80%'}
+knitr::include_graphics("Figures/ScLeaf.jpg")
+```
 
 
 ```{r load RDS1}
 leaf.dataset <- readRDS('Data/leaf.dataset.rds')
-```
-
-]
-.pull-right[
-```{r Ara leaf, echo=FALSE, fig.cap="Graphical summary from (Lopez et al., 2021)", out.width = '80%'}
-knitr::include_graphics("Figures/ScLeaf.jpg")
 ```
 ]
 
@@ -204,12 +207,14 @@ knitr::include_graphics("Figures/Pseudotime.png")
 ```{r root2, echo=FALSE, out.width = '25%'}
 knitr::include_graphics("Figures/DevelopmentalTrajectory.png")
 ```
-Pseudotime should reflect to a developmental gradient in plant tissue
+Pseudotime should reflect to developmental gradients in plant tissue
 ]
 .pull-right[
 ##Challenges
 
 ✅   Non-linear differentiation trajectories in plant tissues
+
+✅   Different differentiation pace  in different cell types
 
 ✅    Lack of validated marker genes for all transition states
  
@@ -256,17 +261,23 @@ Affected by batch effects.
 ]
 
 ---
-#Monocle3 - use case
+#Monocle3: use case
+.pull-left[
 ```{r monocle3, eval = FALSE}
 cds <- as.cell_data_set(leaf.dataset)
 cds <- cluster_cells(cds)
 cds <- learn_graph(cds)
-plot_cells(cds, label_groups_by_cluster = FALSE, label_leaves = FALSE, label_branch_points = FALSE)
+plot_cells(cds, label_groups_by_cluster = FALSE)
 ```
-.pull-left[
 ![Monocle 2025](Figures/monocle3_traj.png)
 ]
 .pull-right[
+```{r monocle3 pseudo, eval = FALSE}
+cds <- order_cells(cds)
+plot_cells(cds, color_cells_by = "pseudotime")
+
+
+```
 ![Monocle 2025 pseudo](Figures/monocle3_traj_pseudo.png)
 ]
 ---
@@ -347,6 +358,48 @@ knitr::include_graphics("Figures/UMAP_pseudotime_slingshot_traj_9.png")
 ```
 ]
 ---
+#Slingshot: authors use case
+
+.pull-left[
+##Model of stomatal lineage
+```{r slingshot authors, out.width= "80%", echo = FALSE}
+knitr::include_graphics("Figures/slingshot_notation.png")
+```
+]
+.pull-right[
+##Single-cell reconstruction of stomatal lineage
+```{r slingshot authors 2, out.width= "80%", echo = FALSE}
+knitr::include_graphics("Figures/slingshot_authors.png")
+```
+]
+
+---
+#scVelo - RNA Velocity-Based Pseudotime
+
+.pull-left[
+✅ How it works:
+
+Uses spliced and unspliced RNA reads to estimate directional cell transitions.
+Models RNA metabolism dynamics to predict future cell fates.
+
+✅ Best for:
+
+Highly dynamic cellular processes (e.g., stress responses).
+Predicting the next state of a cell rather than just ordering it in pseudotime.
+
+❌ Weaknesses:
+
+Requires spliced/unspliced counts (not available in standard Seurat RNA data).
+Sensitive to preprocessing errors, incorrect velocity estimation leads to artifacts.
+Often difficult to interpret.
+
+📌 Use Case: Tracking stress adaptation in plant cells.
+]
+.pull-right[
+"... vascular and mesophyll tissue share a common origin, the ground meristem. It has been previously challenging to profile such cells, but our trajectory inference delineated distinct cell fate decisions that distinguish the mesophyll and vasculature (Lopez-Anido et al., 2021)".
+![scVelo Figure](Figures/scVelo_leaf.png)
+]
+---
 #CytoTrace: differentiation state
 
 .pull-left[
@@ -422,15 +475,15 @@ library(knitr)
 # Create the table as a data frame
 summary_table <- data.frame(
   Scenario = c(
-    "Simple, linear differentiation",
     "Complex, multi-branch differentiation",
     "Continuous, smooth differentiation",
-   "Global differentiation potential (early vs. late)"
+    "Predicting future cell fates",
+    "Global differentiation potential (early vs. late)"
   ),
   Best_Method = c(
-    "CytoTRACE",
     "Monocle3",
     "Slingshot",
+    "scVelo",
     "CytoTRACE"
   )
 )
@@ -444,14 +497,47 @@ class: middle, inverse
 
 ##I Have a Pseudotime Trajectory… What’s Next?
 
-- Identify Key Genes Driving Transitions
 - Detect Branching Events and Cell Fate Decisions
-- Map Pseudotime to Functional Pathways
+- Identify Key Genes Driving Transitions
 - Integrate Pseudotime with Other Data Modalities
+- Map Pseudotime to Functional Pathways
+
 
 ---
+#Finding genes that change as a function of pseudotime
+
+An example from Monocle3:
+```{r DEG, eval = FALSE}
+de_genes <- graph_test(cds, neighbor_graph="principal_graph", cores=4)
+plot_cells(cds, genes=c("AT1G01050", "AT1G01120", "AT1G04110", "AT1G08380"),
+           show_trajectory_graph=FALSE,
+           label_cell_groups=FALSE,
+           label_leaves=FALSE)
+```
+
+More than 13000 significant genes have been identified. 
 
 ---
-#I Have a Pseudotime Trajectory… What’s Next?
+#Finding genes that change as a function of pseudotime
 
+.pull-left[
+![DEG Figure](Figures/monocle3_sig_genes.png)
+]
 
+.pull-right[
+![Pseudo Genes](Figures/monocle3_sig_genes_profiles.png)
+]
+---
+#Identify Gene Modules Driving Transitions
+```{r Modules, eval = FALSE}
+gene_module_df<-find_gene_modules(cds[sig_genes,])
+cell_group_df <- tibble::tibble(cell=row.names(colData(cds)), cell_group = clusters(cds))
+agg_mat <- aggregate_gene_expression(cds, gene_module_df, cell_group_df)
+pheatmap::pheatmap(agg_mat, scale="column", clustering_method="ward.D2"
+```
+
+```{r gene modules, out.width= "40%", echo = FALSE}
+knitr::include_graphics("Figures/monocle3_modules.png")
+```
+---
+#Integrate Pseudotime with Other Data Modalities

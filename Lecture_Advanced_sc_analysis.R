@@ -59,15 +59,14 @@ plot_cells(cds, color_cells_by = "pseudotime", label_cell_groups = FALSE, label_
 ggsave("Figures/monocle3_traj_pseudo.png", plot = last_plot(), width = 4, height = 2.5, dpi = 150)
 
 # To explore DEG
-# Step 3: Fit a GAM model to test for DE genes along pseudotime
+# Fit a GAM model to test for DE genes along pseudotime
 de_genes <- graph_test(cds, neighbor_graph="principal_graph", cores=4)
 
-# Step 4: Select significant genes (adjust p-value cutoff as needed)
+#Select significant genes (adjust p-value cutoff as needed)
 sig_genes <- rownames(subset(de_genes, q_value < 0.0001))
 head(sig_genes)
 
-
-# Step 5: Plot gene expression of top significant genes over pseudotime
+#Plot gene expression of top significant genes over pseudotime
 
 rowData(cds)$gene_short_name <- rownames(cds)
 
