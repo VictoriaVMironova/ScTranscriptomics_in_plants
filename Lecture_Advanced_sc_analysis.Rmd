@@ -41,11 +41,11 @@ class: inverse, middle
 
 #The learning goals for this lecture:
 
-- Overview of the standard workflow (with Seurat)
+- Overview of the standard workflow
 
 - Pseudotime analysis
 
-- Datasets integration and meta-analysis
+- Advanced opportunities
 
 
 ---
@@ -80,9 +80,9 @@ knitr::include_graphics("Figures/StandardPipeline.png")
 ---
 class: middle, inverse
 
-#The standard pipeline: hands-on
+#Computer practice
 
-You will test the standard pipeline in the computer practice: 
+You will test the standard pipeline workflow in the computer practice: 
 - C1. From reads to counts
 - C2. From counts to clusters
 - C3. From clusters to marker genes
@@ -497,11 +497,31 @@ class: middle, inverse
 
 ##I Have a Pseudotime Trajectory… What’s Next?
 
-- Detect Branching Events and Cell Fate Decisions
+- **Detect Branching Events and Cell Fate Decisions**
 - Identify Key Genes Driving Transitions
+- Pseudospatial transcriptomics
 - Integrate Pseudotime with Other Data Modalities
-- Map Pseudotime to Functional Pathways
 
+---
+#Detect Branching Events and Cell Fate Decisions
+
+.pull-left[
+![scVelo Figure](Figures/scVelo_leaf.png)
+]
+.pull-right[
+```{r slingshot authors 3, out.width= "120%", echo = FALSE}
+knitr::include_graphics("Figures/slingshot_authors.png")
+```
+]
+---
+class: middle, inverse
+
+##I Have a Pseudotime Trajectory… What’s Next?
+
+- Detect Branching Events and Cell Fate Decisions
+- **Identify Key Genes Driving Transitions**
+- Pseudospatial transcriptomics
+- Integrate Pseudotime with Other Data Modalities
 
 ---
 #Finding genes that change as a function of pseudotime
@@ -536,8 +556,118 @@ agg_mat <- aggregate_gene_expression(cds, gene_module_df, cell_group_df)
 pheatmap::pheatmap(agg_mat, scale="column", clustering_method="ward.D2"
 ```
 
-```{r gene modules, out.width= "40%", echo = FALSE}
+```{r gene modules, out.width= "35%", echo = FALSE}
 knitr::include_graphics("Figures/monocle3_modules.png")
 ```
 ---
-#Integrate Pseudotime with Other Data Modalities
+class: middle, inverse
+
+##I Have a Pseudotime Trajectory… What’s Next?
+
+- Detect Branching Events and Cell Fate Decisions
+- Identify Key Genes Driving Transitions
+- **Pseudospatial transcriptomics**
+- Integrate Pseudotime with Other Data Modalities
+
+---
+
+#Pseudospatial transcriptomics
+
+📌Clustering procedure identifies cell types and sub-cell types
+📌Pseudotime orders cells in the developmental trajectories.
+
+![Pseudo Genes](Figures/pseudospatial.png)
+---
+#Pseudospatial transcriptomics: root cell atlas
+
+![Pseudospatial](Figures/RCA_1.png)
+---
+#Pseudospatial transcriptomics: root cell atlas
+
+![Pseudospatial](Figures/RCA_2.png)
+---
+#Pseudospatial transcriptomics: root cell atlas
+
+![Pseudospatial](Figures/RCA_3.png)
+---
+#RootCellAtlas web-service
+
+![Pseudospatial](Figures/RootCellAtlas_starting.png)
+
+
+rootcellatlas.org 
+---
+#RootCellAtlas web-service
+
+```{r RCA, out.width= "55%", echo = FALSE}
+knitr::include_graphics("Figures/RootCellAtlas.png")
+```
+
+rootcellatlas.org 
+---
+#Pseudospatial transcriptomics for other plant organs
+
+.pull-left[
+```{r emryo, out.width= "100%", echo = FALSE}
+knitr::include_graphics("Figures/globular_embryo.png")
+```
+]
+
+.pull-right[
+```{r SAM, out.width= "80%", echo = FALSE}
+knitr::include_graphics("Figures/SAM.png")
+```
+]
+---
+class: middle, inverse
+
+##I Have a Pseudotime Trajectory… What’s Next?
+
+- Detect Branching Events and Cell Fate Decisions
+- Identify Key Genes Driving Transitions
+- Pseudospatial transcriptomics
+- **Integrate Pseudotime with Other Data Modalities**
+
+---
+#Integrate scTranscriptomics data with Other Data Modalities
+
+Integration with other modalities helps to:
+
+✅ Link transcriptional changes to chromatin accessibility (ATAC-Seq).
+
+    Tools: Cicero (Monocle3) – infer enhancer activity;
+    Signac (Seurat) – integrate scATAC-Seq with scRNA-Seq;
+    ChromVAR
+    
+✅ Understand how cell-cell communication changes over pseudotime (Ligand-Receptor Analysis).
+
+✅ Validate  the findings using spatial transcriptomics.
+
+✅ Correlate metabolite and protein abundance with gene expression.
+
+---
+#Integrate scTranscriptomics data with Other Datasets
+.pull-left[
+Rare cell types can be found only via sample enrichment or data integration.
+I.e. we were only able to detect stem cell clusters for the root when integrated 7 sc-datasets:
+```{r Sstemcell, out.width= "100%", echo = FALSE}
+knitr::include_graphics("Figures/stemcells.png")
+```
+]
+.pull-right[
+Inter-species comparison reveals conserved and divergent root developmental pathways (Zhang et al., Nat Comm, 2021):
+```{r rice, out.width= "100%", echo = FALSE}
+knitr::include_graphics("Figures/rice-ara.png")
+```
+]
+---
+class: middle, inverse
+
+##Final remarks
+
+- There is no single ‘correct’ trajectory or cell cluster —biological insights come from comparing different approaches.
+- A well-annotated dataset is more powerful than the most complex model.
+- Reproducibility is key — always document your workflow and parameters
+- Use ChatGPT (or other AI tools) to facilitate your coding experience
+- **Do not hesitate to contact: victoria.mironova@ru.nl**
+
