@@ -4,7 +4,6 @@
 #https://broadinstitute.github.io/2019_scWorkshop/functional-pseudotime-analysis.html
 
 
-
 set.seed(100)
 #for slingshot:
 #BiocManager::install("slingshot")
@@ -16,7 +15,7 @@ set.seed(100)
 #                       'limma', 'lme4', 'S4Vectors', 'SingleCellExperiment',
 #                       'SummarizedExperiment', 'batchelor', 'HDF5Array',
 #                       'terra', 'ggrastr'))
-devtools::install_github('cole-trapnell-lab/monocle3')
+#devtools::install_github('cole-trapnell-lab/monocle3')
 
 library(tradeSeq)
 library(scater)
@@ -29,7 +28,6 @@ library(SeuratWrappers)
 library(CytoTRACE)
 
 leaf.dataset <- readRDS('Data/leaf.dataset.rds')
-#leaf.dataset <- readRDS('Data/leaf.dataset_2024.rds')
 DimPlot(leaf.dataset, label = TRUE, pt.size = 1.5, label.size = 10) + NoLegend()
 
 # Monocle3 ----
